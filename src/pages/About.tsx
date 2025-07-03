@@ -27,13 +27,6 @@ const About = () => {
     }
   ];
 
-  const achievements = [
-    { icon: Award, title: 'CTF Champions', value: '15+ Wins' },
-    { icon: Users, title: 'Community Size', value: '500+ Members' },
-    { icon: Code, title: 'Open Source Tools', value: '25+ Projects' },
-    { icon: Shield, title: 'Security Reports', value: '100+ Disclosed' }
-  ];
-
   return (
     <div className="min-h-screen bg-brand-dark relative overflow-hidden">
       <MatrixRain />
@@ -142,38 +135,6 @@ const About = () => {
             </div>
           </section>
 
-          {/* Achievements Section */}
-          <section className="mb-16">
-            <div className="text-center mb-12">
-              <h2 className="text-4xl font-bold text-white mb-6 glow-text">
-                Our <span className="text-brand-red">Impact</span>
-              </h2>
-              <p className="text-xl text-brand-green max-w-2xl mx-auto">
-                Measurable contributions to the cybersecurity community
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {achievements.map((achievement, index) => {
-                const Icon = achievement.icon;
-                return (
-                  <div key={index} className="terminal-window p-6 text-center hover-glow transition-all duration-300">
-                    <div className="terminal-header mb-4">
-                      <div className="terminal-dots">
-                        <div className="terminal-dot dot-red"></div>
-                        <div className="terminal-dot dot-yellow"></div>
-                        <div className="terminal-dot dot-green"></div>
-                      </div>
-                    </div>
-                    <Icon className="h-12 w-12 text-brand-red mx-auto mb-4" />
-                    <div className="text-3xl font-bold text-white mb-2">{achievement.value}</div>
-                    <div className="text-brand-green">{achievement.title}</div>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-
           {/* What We Do Section */}
           <section>
             <div className="terminal-window p-8 lg:p-12">
@@ -227,6 +188,42 @@ const About = () => {
                 </div>
               </div>
             </div>
+          </section>
+
+          {/* Community Stats */}
+          <section className="mt-16">
+              <div className="terminal-window max-w-4xl mx-auto p-8 lg:p-12">
+                <div className="terminal-header">
+                  <div className="terminal-dots">
+                    <div className="terminal-dot dot-red"></div>
+                    <div className="terminal-dot dot-yellow"></div>
+                    <div className="terminal-dot dot-green"></div>
+                  </div>
+                </div>
+                <div className="p-8">
+                  <h2 className="text-2xl font-bold text-white mb-6 text-center">
+                    Community <span className="text-brand-red">Stats</span>
+                  </h2>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="text-center p-4 bg-brand-darker rounded-lg">
+                      <div className="text-2xl font-bold text-brand-red mb-1">1500+</div>
+                      <div className="text-brand-green text-sm">Active Members</div>
+                    </div>
+                    <div className="text-center p-4 bg-brand-darker rounded-lg">
+                      <div className="text-2xl font-bold text-brand-red mb-1">20+</div>
+                      <div className="text-brand-green text-sm">CTF Events</div>
+                    </div>
+                    <div className="text-center p-4 bg-brand-darker rounded-lg">
+                      <div className="text-2xl font-bold text-brand-red mb-1">10+</div>
+                      <div className="text-brand-green text-sm">Workshops</div>
+                    </div>
+                    <div className="text-center p-4 bg-brand-darker rounded-lg">
+                      <div className="text-2xl font-bold text-brand-red mb-1">25+</div>
+                      <div className="text-brand-green text-sm">GitHub Stars</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
           </section>
         </div>
       </div>

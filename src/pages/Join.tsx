@@ -1,8 +1,9 @@
-
 import { useState } from 'react';
 import Navigation from '../components/Navigation';
 import MatrixRain from '../components/MatrixRain';
-import { MessageCircle, Github, Mail, User, Send, ExternalLink } from 'lucide-react';
+import { Github, Mail, User, Send, ExternalLink } from 'lucide-react';
+import { FaTelegramPlane, FaGithub, FaTwitter, FaYoutube, FaInstagram } from 'react-icons/fa';
+import { SocialIcon } from 'react-social-icons';
 
 const Join = () => {
   const [formData, setFormData] = useState({
@@ -61,7 +62,7 @@ const Join = () => {
                 Join <span className="text-brand-red">Yekolo Temari</span>
               </h1>
               <p className="text-xl text-brand-green">
-                Become part of Ethiopia's premier cybersecurity community
+                Become part of Ethiopia's amazing cybersecurity community
               </p>
             </div>
           </div>
@@ -85,15 +86,29 @@ const Join = () => {
                   <div className="space-y-4">
                     {/* Telegram */}
                     <a
-                      href="https://t.me/yekolotemari"
+                      href="https://t.me/temari_yekolo"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center space-x-4 p-4 bg-brand-darker rounded-lg hover:bg-brand-red/20 hover:border-brand-red border border-brand-green/30 transition-all duration-300 hover-glow"
                     >
-                      <MessageCircle className="h-8 w-8 text-blue-400" />
+                      <FaTelegramPlane className="h-8 w-8 text-blue-400" />
+                      <div>
+                        <h3 className="text-white font-bold">Telegram Channel</h3>
+                        <p className="text-brand-green text-sm">Community Announcements, Security News, and  Blog Posts</p>
+                        <p className="text-brand-green/60 text-xs">1500+ active members</p>
+                      </div>
+                      <ExternalLink className="h-5 w-5 text-brand-green/60 ml-auto" />
+                    </a>
+                    <a
+                      href="https://t.me/+VEHOLUBqlzQW766y"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center space-x-4 p-4 bg-brand-darker rounded-lg hover:bg-brand-red/20 hover:border-brand-red border border-brand-green/30 transition-all duration-300 hover-glow"
+                    >
+                      <FaTelegramPlane className="h-8 w-8 text-blue-400" />
                       <div>
                         <h3 className="text-white font-bold">Telegram Group</h3>
-                        <p className="text-brand-green text-sm">Daily discussions, CTF announcements, and community support</p>
+                        <p className="text-brand-green text-sm">Daily Discussions, CTF/Hack Night Announcements, and Community Support</p>
                         <p className="text-brand-green/60 text-xs">500+ active members</p>
                       </div>
                       <ExternalLink className="h-5 w-5 text-brand-green/60 ml-auto" />
@@ -101,16 +116,64 @@ const Join = () => {
 
                     {/* GitHub */}
                     <a
-                      href="https://github.com/yekolo-temari"
+                      href="https://github.com/yekolotemari"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center space-x-4 p-4 bg-brand-darker rounded-lg hover:bg-brand-red/20 hover:border-brand-red border border-brand-green/30 transition-all duration-300 hover-glow"
                     >
-                      <Github className="h-8 w-8 text-white" />
+                      <FaGithub className="h-8 w-8 text-white" />
                       <div>
                         <h3 className="text-white font-bold">GitHub Organization</h3>
                         <p className="text-brand-green text-sm">Open source security tools and CTF challenges</p>
-                        <p className="text-brand-green/60 text-xs">25+ repositories</p>
+                        <p className="text-brand-green/60 text-xs">8+ repositories</p>
+                      </div>
+                      <ExternalLink className="h-5 w-5 text-brand-green/60 ml-auto" />
+                    </a>
+
+                    {/* Twitter (X) using react-social-icons */}
+                    <a
+                      href="https://twitter.com/yekolotemari"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center space-x-4 p-4 bg-brand-darker rounded-lg hover:bg-brand-red/20 hover:border-brand-red border border-brand-green/30 transition-all duration-300 hover-glow"
+                    >
+                      <SocialIcon url="https://x.com/yekolo_temari"   />
+                      <div>
+                        <h3 className="text-white font-bold">Twitter</h3>
+                        <p className="text-brand-green text-sm">Follow us for updates, news, and event highlights</p>
+                        <p className="text-brand-green/60 text-xs">@yekolotemari</p>
+                      </div>
+                      <ExternalLink className="h-5 w-5 text-brand-green/60 ml-auto" />
+                    </a>
+
+                    {/* YouTube */}
+                    <a
+                      href="https://www.youtube.com/@yekolotemari8858"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center space-x-4 p-4 bg-brand-darker rounded-lg hover:bg-brand-red/20 hover:border-brand-red border border-brand-green/30 transition-all duration-300 hover-glow"
+                    >
+                      <FaYoutube className="h-8 w-8 text-red-600" />
+                      <div>
+                        <h3 className="text-white font-bold">YouTube</h3>
+                        <p className="text-brand-green text-sm">Watch our talks, tutorials, and event recordings</p>
+                        <p className="text-brand-green/60 text-xs">@yekolotemari</p>
+                      </div>
+                      <ExternalLink className="h-5 w-5 text-brand-green/60 ml-auto" />
+                    </a>
+
+                    {/* Instagram */}
+                    <a
+                      href="https://instagram.com/yekolo_temari1337"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center space-x-4 p-4 bg-brand-darker rounded-lg hover:bg-brand-red/20 hover:border-brand-red border border-brand-green/30 transition-all duration-300 hover-glow"
+                    >
+                      <FaInstagram className="h-8 w-8 text-pink-500" />
+                      <div>
+                        <h3 className="text-white font-bold">Instagram</h3>
+                        <p className="text-brand-green text-sm">See photos, stories, and event highlights</p>
+                        <p className="text-brand-green/60 text-xs">@yekolotemari</p>
                       </div>
                       <ExternalLink className="h-5 w-5 text-brand-green/60 ml-auto" />
                     </a>
@@ -120,7 +183,7 @@ const Join = () => {
                       <Mail className="h-8 w-8 text-brand-red" />
                       <div>
                         <h3 className="text-white font-bold">Email Contact</h3>
-                        <p className="text-brand-green text-sm">info@yekolo-temari.et</p>
+                        <p className="text-brand-green text-sm">contact@yekolotemari.com</p>
                         <p className="text-brand-green/60 text-xs">For partnership and collaboration inquiries</p>
                       </div>
                     </div>
@@ -143,19 +206,19 @@ const Join = () => {
                   </h2>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="text-center p-4 bg-brand-darker rounded-lg">
-                      <div className="text-2xl font-bold text-brand-red mb-1">500+</div>
+                      <div className="text-2xl font-bold text-brand-red mb-1">1500+</div>
                       <div className="text-brand-green text-sm">Active Members</div>
                     </div>
                     <div className="text-center p-4 bg-brand-darker rounded-lg">
-                      <div className="text-2xl font-bold text-brand-red mb-1">50+</div>
+                      <div className="text-2xl font-bold text-brand-red mb-1">20+</div>
                       <div className="text-brand-green text-sm">CTF Events</div>
                     </div>
                     <div className="text-center p-4 bg-brand-darker rounded-lg">
-                      <div className="text-2xl font-bold text-brand-red mb-1">25+</div>
+                      <div className="text-2xl font-bold text-brand-red mb-1">10+</div>
                       <div className="text-brand-green text-sm">Workshops</div>
                     </div>
                     <div className="text-center p-4 bg-brand-darker rounded-lg">
-                      <div className="text-2xl font-bold text-brand-red mb-1">1k+</div>
+                      <div className="text-2xl font-bold text-brand-red mb-1">25+</div>
                       <div className="text-brand-green text-sm">GitHub Stars</div>
                     </div>
                   </div>

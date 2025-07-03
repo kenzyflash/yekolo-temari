@@ -175,7 +175,7 @@ const Index = () => {
                 <div className="terminal-dots">
                   <div className="terminal-dot dot-red"></div>
                   <div className="terminal-dot dot-yellow"></div>
-                  <div class_="terminal-dot dot-green"></div>
+                  <div className="terminal-dot dot-green"></div>
                 </div>
               </div>
               <h2 className="text-3xl lg:text-4xl font-bold text-white mb-6">

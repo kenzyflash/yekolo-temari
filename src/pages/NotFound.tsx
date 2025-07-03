@@ -141,7 +141,7 @@ const NotFound = () => {
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .glitch-text {
           animation: glitch 2s infinite;
         }

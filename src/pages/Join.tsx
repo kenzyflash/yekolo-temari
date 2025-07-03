@@ -1,0 +1,304 @@
+
+import { useState } from 'react';
+import Navigation from '../components/Navigation';
+import MatrixRain from '../components/MatrixRain';
+import { MessageCircle, Github, Mail, User, Send, ExternalLink } from 'lucide-react';
+
+const Join = () => {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    message: '',
+    interests: [] as string[]
+  });
+
+  const interests = [
+    'Web Security',
+    'Mobile Security',
+    'Binary Exploitation',
+    'Cryptography',
+    'Network Security',
+    'Malware Analysis',
+    'CTF Competitions',
+    'Bug Bounty',
+    'Digital Forensics',
+    'Social Engineering'
+  ];
+
+  const handleInterestToggle = (interest: string) => {
+    setFormData(prev => ({
+      ...prev,
+      interests: prev.interests.includes(interest)
+        ? prev.interests.filter(i => i !== interest)
+        : [...prev.interests, interest]
+    }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log('Form submitted:', formData);
+    // TODO: Submit to backend
+  };
+
+  return (
+    <div className="min-h-screen bg-brand-dark relative overflow-hidden">
+      <MatrixRain />
+      <Navigation />
+      
+      <div className="relative z-10 pt-24 pb-16 px-4">
+        <div className="max-w-6xl mx-auto">
+          {/* Header */}
+          <div className="text-center mb-12">
+            <div className="terminal-window max-w-4xl mx-auto p-8">
+              <div className="terminal-header mb-6">
+                <div className="terminal-dots">
+                  <div className="terminal-dot dot-red"></div>
+                  <div className="terminal-dot dot-yellow"></div>
+                  <div className="terminal-dot dot-green"></div>
+                </div>
+              </div>
+              <h1 className="text-4xl lg:text-5xl font-bold text-white mb-6 glow-text">
+                Join <span className="text-brand-red">Yekolo Temari</span>
+              </h1>
+              <p className="text-xl text-brand-green">
+                Become part of Ethiopia's premier cybersecurity community
+              </p>
+            </div>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-12">
+            {/* Community Links */}
+            <div className="space-y-8">
+              <div className="terminal-window">
+                <div className="terminal-header">
+                  <div className="terminal-dots">
+                    <div className="terminal-dot dot-red"></div>
+                    <div className="terminal-dot dot-yellow"></div>
+                    <div className="terminal-dot dot-green"></div>
+                  </div>
+                </div>
+                <div className="p-8">
+                  <h2 className="text-2xl font-bold text-white mb-6">
+                    Connect With <span className="text-brand-red">Us</span>
+                  </h2>
+                  
+                  <div className="space-y-4">
+                    {/* Telegram */}
+                    <a
+                      href="https://t.me/yekolotemari"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center space-x-4 p-4 bg-brand-darker rounded-lg hover:bg-brand-red/20 hover:border-brand-red border border-brand-green/30 transition-all duration-300 hover-glow"
+                    >
+                      <MessageCircle className="h-8 w-8 text-blue-400" />
+                      <div>
+                        <h3 className="text-white font-bold">Telegram Group</h3>
+                        <p className="text-brand-green text-sm">Daily discussions, CTF announcements, and community support</p>
+                        <p className="text-brand-green/60 text-xs">500+ active members</p>
+                      </div>
+                      <ExternalLink className="h-5 w-5 text-brand-green/60 ml-auto" />
+                    </a>
+
+                    {/* GitHub */}
+                    <a
+                      href="https://github.com/yekolo-temari"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center space-x-4 p-4 bg-brand-darker rounded-lg hover:bg-brand-red/20 hover:border-brand-red border border-brand-green/30 transition-all duration-300 hover-glow"
+                    >
+                      <Github className="h-8 w-8 text-white" />
+                      <div>
+                        <h3 className="text-white font-bold">GitHub Organization</h3>
+                        <p className="text-brand-green text-sm">Open source security tools and CTF challenges</p>
+                        <p className="text-brand-green/60 text-xs">25+ repositories</p>
+                      </div>
+                      <ExternalLink className="h-5 w-5 text-brand-green/60 ml-auto" />
+                    </a>
+
+                    {/* Email */}
+                    <div className="flex items-center space-x-4 p-4 bg-brand-darker rounded-lg border border-brand-green/30">
+                      <Mail className="h-8 w-8 text-brand-red" />
+                      <div>
+                        <h3 className="text-white font-bold">Email Contact</h3>
+                        <p className="text-brand-green text-sm">info@yekolo-temari.et</p>
+                        <p className="text-brand-green/60 text-xs">For partnership and collaboration inquiries</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Community Stats */}
+              <div className="terminal-window">
+                <div className="terminal-header">
+                  <div className="terminal-dots">
+                    <div className="terminal-dot dot-red"></div>
+                    <div className="terminal-dot dot-yellow"></div>
+                    <div className="terminal-dot dot-green"></div>
+                  </div>
+                </div>
+                <div className="p-8">
+                  <h2 className="text-2xl font-bold text-white mb-6">
+                    Community <span className="text-brand-red">Stats</span>
+                  </h2>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="text-center p-4 bg-brand-darker rounded-lg">
+                      <div className="text-2xl font-bold text-brand-red mb-1">500+</div>
+                      <div className="text-brand-green text-sm">Active Members</div>
+                    </div>
+                    <div className="text-center p-4 bg-brand-darker rounded-lg">
+                      <div className="text-2xl font-bold text-brand-red mb-1">50+</div>
+                      <div className="text-brand-green text-sm">CTF Events</div>
+                    </div>
+                    <div className="text-center p-4 bg-brand-darker rounded-lg">
+                      <div className="text-2xl font-bold text-brand-red mb-1">25+</div>
+                      <div className="text-brand-green text-sm">Workshops</div>
+                    </div>
+                    <div className="text-center p-4 bg-brand-darker rounded-lg">
+                      <div className="text-2xl font-bold text-brand-red mb-1">1k+</div>
+                      <div className="text-brand-green text-sm">GitHub Stars</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Contact Form */}
+            <div className="terminal-window">
+              <div className="terminal-header">
+                <div className="terminal-dots">
+                  <div className="terminal-dot dot-red"></div>
+                  <div className="terminal-dot dot-yellow"></div>
+                  <div className="terminal-dot dot-green"></div>
+                </div>
+              </div>
+              <div className="p-8">
+                <h2 className="text-2xl font-bold text-white mb-6">
+                  Get in <span className="text-brand-red">Touch</span>
+                </h2>
+                
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div>
+                    <label className="block text-brand-green mb-2">
+                      <User className="inline h-4 w-4 mr-2" />
+                      Full Name
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.name}
+                      onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                      className="w-full p-3 bg-brand-darker border border-brand-green/30 rounded-lg text-brand-green placeholder-brand-green/60 focus:outline-none focus:border-brand-red focus:ring-2 focus:ring-brand-red/20"
+                      placeholder="Your full name"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-brand-green mb-2">
+                      <Mail className="inline h-4 w-4 mr-2" />
+                      Email Address
+                    </label>
+                    <input
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                      className="w-full p-3 bg-brand-darker border border-brand-green/30 rounded-lg text-brand-green placeholder-brand-green/60 focus:outline-none focus:border-brand-red focus:ring-2 focus:ring-brand-red/20"
+                      placeholder="your@email.com"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-brand-green mb-2">Areas of Interest</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {interests.map((interest) => (
+                        <label
+                          key={interest}
+                          className="flex items-center space-x-2 cursor-pointer p-2 rounded hover:bg-brand-darker transition-colors"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={formData.interests.includes(interest)}
+                            onChange={() => handleInterestToggle(interest)}
+                            className="form-checkbox h-4 w-4 text-brand-red bg-brand-darker border-brand-green/30 rounded focus:ring-brand-red focus:ring-offset-0"
+                          />
+                          <span className="text-brand-green text-sm">{interest}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-brand-green mb-2">Message (Optional)</label>
+                    <textarea
+                      value={formData.message}
+                      onChange={(e) => setFormData(prev => ({ ...prev, message: e.target.value }))}
+                      rows={4}
+                      className="w-full p-3 bg-brand-darker border border-brand-green/30 rounded-lg text-brand-green placeholder-brand-green/60 focus:outline-none focus:border-brand-red focus:ring-2 focus:ring-brand-red/20 resize-none"
+                      placeholder="Tell us about your background, interests, or any questions you have..."
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full bg-brand-red hover:bg-brand-accent-red text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 hover-glow flex items-center justify-center space-x-2"
+                  >
+                    <Send className="h-5 w-5" />
+                    <span>Send Message</span>
+                  </button>
+                </form>
+
+                <div className="mt-8 p-4 bg-brand-green/10 rounded-lg border border-brand-green/30">
+                  <p className="text-brand-green text-sm">
+                    <strong>Pro Tip:</strong> Join our Telegram group for immediate access to the community. 
+                    This form is for formal inquiries and partnership opportunities.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Requirements */}
+          <div className="mt-16">
+            <div className="terminal-window max-w-4xl mx-auto p-8">
+              <div className="terminal-header mb-6">
+                <div className="terminal-dots">
+                  <div className="terminal-dot dot-red"></div>
+                  <div className="terminal-dot dot-yellow"></div>
+                  <div className="terminal-dot dot-green"></div>
+                </div>
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-6 text-center">
+                What We <span className="text-brand-red">Expect</span>
+              </h2>
+              <div className="grid md:grid-cols-2 gap-8">
+                <div>
+                  <h3 className="text-xl font-bold text-brand-red mb-4">✓ Requirements</h3>
+                  <ul className="text-brand-green space-y-2">
+                    <li>• Genuine interest in cybersecurity</li>
+                    <li>• Commitment to ethical hacking principles</li>
+                    <li>• Willingness to learn and share knowledge</li>
+                    <li>• Respect for community guidelines</li>
+                    <li>• Basic understanding of computer systems</li>
+                  </ul>
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-brand-red mb-4">✗ Not Required</h3>
+                  <ul className="text-brand-green space-y-2">
+                    <li>• Prior cybersecurity experience</li>
+                    <li>• Formal education in IT/CS</li>
+                    <li>• Advanced technical skills</li>
+                    <li>• Professional certifications</li>
+                    <li>• Age restrictions (16+ preferred)</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Join;

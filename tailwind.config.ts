@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,14 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// Custom brand colors
+				brand: {
+					red: '#D22B2B',
+					'accent-red': '#F34E3A',
+					dark: '#1A1A1A',
+					darker: '#0D0D0D',
+					green: '#00FF41'
 				}
 			},
 			borderRadius: {
@@ -84,11 +93,45 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'matrix-rain': {
+					'0%': {
+						transform: 'translateY(-100vh)',
+						opacity: '0'
+					},
+					'10%': {
+						opacity: '1'
+					},
+					'90%': {
+						opacity: '1'
+					},
+					'100%': {
+						transform: 'translateY(100vh)',
+						opacity: '0'
+					}
+				},
+				'glow': {
+					'0%, 100%': {
+						textShadow: '0 0 5px #00FF41, 0 0 10px #00FF41, 0 0 15px #00FF41'
+					},
+					'50%': {
+						textShadow: '0 0 2px #00FF41, 0 0 5px #00FF41, 0 0 8px #00FF41'
+					}
+				},
+				'terminal-cursor': {
+					'0%, 50%': { opacity: '1' },
+					'51%, 100%': { opacity: '0' }
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'matrix-rain': 'matrix-rain 3s linear infinite',
+				'glow': 'glow 2s ease-in-out infinite alternate',
+				'terminal-cursor': 'terminal-cursor 1s infinite'
+			},
+			fontFamily: {
+				'mono': ['Fira Code', 'Monaco', 'Consolas', 'monospace'],
 			}
 		}
 	},

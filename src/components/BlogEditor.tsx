@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -53,7 +52,9 @@ const BlogEditor = ({ blogId, onClose, onSave }: BlogEditorProps) => {
       setExcerpt(data.excerpt || '');
       setCategory(data.category || 'General');
       setTags(data.tags || []);
-      setStatus(data.status || 'draft');
+      // Fix the TypeScript error by ensuring the value is one of the allowed types
+      const blogStatus = (data.status as 'draft' | 'pending' | 'published') || 'draft';
+      setStatus(blogStatus);
     } catch (error: any) {
       toast({
         title: "Error",

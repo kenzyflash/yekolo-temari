@@ -1,7 +1,8 @@
 
 import Navigation from '../components/Navigation';
 import MatrixRain from '../components/MatrixRain';
-import { Shield, Target, Users, Globe, Award, Code } from 'lucide-react';
+import Footer from '../components/Footer';
+import { Shield, Users, Target, Code, Globe, Award } from 'lucide-react';
 
 const About = () => {
   const values = [
@@ -227,6 +228,7 @@ const About = () => {
           </section>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

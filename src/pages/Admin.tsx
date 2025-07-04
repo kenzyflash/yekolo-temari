@@ -6,73 +6,117 @@ import { useUserRoles } from '@/hooks/useUserRoles';
 import { supabase } from '@/integrations/supabase/client';
 import Navigation from '@/components/Navigation';
 import MatrixRain from '@/components/MatrixRain';
-import { Plus, Edit, Trash2, Users, Calendar, BookOpen, Settings } from 'lucide-react';
+import BlogManagement from '@/components/admin/BlogManagement';
+import EventManagement from '@/components/admin/EventManagement';
+import ProjectManagement from '@/components/admin/ProjectManagement';
+import { Settings, BookOpen, Calendar, FolderOpen, Users, Shield } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
 
 const Admin = () => {
   const { user, loading: authLoading } = useAuth();
-  const { isAdmin, loading: rolesLoading } = useUserRoles();
+  const { isAdmin, roles, loading: rolesLoading } = useUserRoles();
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  const [blogs, setBlogs] = useState([]);
-  const [events, setEvents] = useState([]);
-  const [users, setUsers] = useState([]);
   const [activeTab, setActiveTab] = useState('blogs');
-  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    blogs: 0,
+    events: 0,
+    projects: 0,
+    users: 0
+  });
 
   useEffect(() => {
+    console.log('Admin page - Auth loading:', authLoading, 'Roles loading:', rolesLoading);
+    console.log('User:', user);
+    console.log('Roles:', roles);
+    console.log('Is admin:', isAdmin());
+    
     if (!authLoading && !rolesLoading) {
       if (!user) {
+        console.log('No user found, redirecting to auth');
         navigate('/auth');
         return;
       }
       if (!isAdmin()) {
+        console.log('User is not admin, showing access denied');
         toast({
           title: "Access Denied",
-          description: "You don't have permission to access this page.",
+          description: "You don't have permission to access this page. Please contact an administrator if you believe this is an error.",
           variant: "destructive"
         });
         navigate('/');
         return;
       }
-      fetchData();
+      console.log('User is admin, fetching stats');
+      fetchStats();
     }
-  }, [user, authLoading, rolesLoading, isAdmin]);
+  }, [user, authLoading, rolesLoading, isAdmin, navigate, toast]);
 
-  const fetchData = async () => {
+  const fetchStats = async () => {
     try {
-      const [blogsRes, eventsRes, rolesRes] = await Promise.all([
-        supabase.from('blogs').select('*').order('created_at', { ascending: false }),
-        supabase.from('events').select('*').order('event_date', { ascending: false }),
-        supabase.from('user_roles').select('*, user_id').order('created_at', { ascending: false })
+      const [blogsRes, eventsRes, projectsRes, usersRes] = await Promise.all([
+        supabase.from('blogs').select('id', { count: 'exact', head: true }),
+        supabase.from('events').select('id', { count: 'exact', head: true }),
+        supabase.from('projects').select('id', { count: 'exact', head: true }),
+        supabase.from('user_roles').select('id', { count: 'exact', head: true })
       ]);
 
-      if (blogsRes.error) throw blogsRes.error;
-      if (eventsRes.error) throw eventsRes.error;
-      if (rolesRes.error) throw rolesRes.error;
-
-      setBlogs(blogsRes.data || []);
-      setEvents(eventsRes.data || []);
-      setUsers(rolesRes.data || []);
+      setStats({
+        blogs: blogsRes.count || 0,
+        events: eventsRes.count || 0,
+        projects: projectsRes.count || 0,
+        users: usersRes.count || 0
+      });
     } catch (error: any) {
+      console.error('Error fetching stats:', error);
       toast({
         title: "Error",
-        description: error.message,
+        description: "Failed to load dashboard statistics",
         variant: "destructive"
       });
-    } finally {
-      setLoading(false);
     }
   };
 
-  const deleteBlog = async (id: string) => {
+  // Add a manual admin role assignment for testing
+  const makeUserAdmin = async () => {
+    if (!user) return;
+    
     try {
-      const { error } = await supabase.from('blogs').delete().eq('id', id);
+      // First check if user already has admin role
+      const { data: existingRole } = await supabase
+        .from('user_roles')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('role', 'admin')
+        .single();
+
+      if (existingRole) {
+        toast({
+          title: "Info",
+          description: "You already have admin role",
+        });
+        return;
+      }
+
+      // Add admin role
+      const { error } = await supabase
+        .from('user_roles')
+        .insert([{
+          user_id: user.id,
+          role: 'admin'
+        }]);
+
       if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Admin role added successfully. Please refresh the page.",
+      });
       
-      setBlogs(blogs.filter((blog: any) => blog.id !== id));
-      toast({ title: "Blog deleted successfully" });
+      // Refresh the page to update roles
+      window.location.reload();
     } catch (error: any) {
       toast({
         title: "Error",
@@ -82,34 +126,69 @@ const Admin = () => {
     }
   };
 
-  const deleteEvent = async (id: string) => {
-    try {
-      const { error } = await supabase.from('events').delete().eq('id', id);
-      if (error) throw error;
-      
-      setEvents(events.filter((event: any) => event.id !== id));
-      toast({ title: "Event deleted successfully" });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
-  };
-
-  if (authLoading || rolesLoading || loading) {
+  if (authLoading || rolesLoading) {
     return (
       <div className="min-h-screen bg-brand-dark flex items-center justify-center">
-        <div className="text-brand-green text-xl">Loading...</div>
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-brand-green mb-4"></div>
+          <div className="text-brand-green text-xl">Loading admin panel...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show access denied if not admin, but provide a way to become admin for testing
+  if (!isAdmin()) {
+    return (
+      <div className="min-h-screen bg-brand-dark relative overflow-hidden">
+        <MatrixRain />
+        <Navigation />
+        
+        <div className="relative z-10 pt-24 pb-16 px-4">
+          <div className="max-w-2xl mx-auto text-center">
+            <div className="terminal-window">
+              <div className="terminal-header">
+                <div className="terminal-dots">
+                  <div className="terminal-dot dot-red"></div>
+                  <div className="terminal-dot dot-yellow"></div>
+                  <div className="terminal-dot dot-green"></div>
+                </div>
+              </div>
+              <div className="p-8">
+                <Shield className="h-16 w-16 text-brand-red mx-auto mb-4" />
+                <h1 className="text-2xl font-bold text-white mb-4">Access Denied</h1>
+                <p className="text-brand-green mb-6">
+                  You don't have permission to access the admin panel. 
+                  Your current roles: {roles.length ? roles.join(', ') : 'user'}
+                </p>
+                <div className="space-y-4">
+                  <Button onClick={() => navigate('/')} className="bg-brand-red hover:bg-brand-accent-red">
+                    Return Home
+                  </Button>
+                  <div className="text-sm text-brand-green/60">
+                    <p>For testing purposes, you can temporarily grant yourself admin access:</p>
+                    <Button 
+                      onClick={makeUserAdmin}
+                      variant="outline"
+                      className="mt-2 border-brand-green text-brand-green hover:bg-brand-green hover:text-brand-dark"
+                    >
+                      Grant Admin Access (Testing)
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
   const tabs = [
-    { id: 'blogs', name: 'Blogs', icon: BookOpen, count: blogs.length },
-    { id: 'events', name: 'Events', icon: Calendar, count: events.length },
-    { id: 'users', name: 'Users', icon: Users, count: users.length }
+    { id: 'blogs', name: 'Blogs', icon: BookOpen, count: stats.blogs },
+    { id: 'events', name: 'Events', icon: Calendar, count: stats.events },
+    { id: 'projects', name: 'Projects', icon: FolderOpen, count: stats.projects },
+    { id: 'users', name: 'Users', icon: Users, count: stats.users }
   ];
 
   return (
@@ -129,23 +208,54 @@ const Admin = () => {
               </div>
             </div>
             <div className="p-6">
-              <div className="flex items-center space-x-3">
-                <Settings className="h-8 w-8 text-brand-red" />
-                <h1 className="text-3xl font-bold text-white">Admin Dashboard</h1>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <Settings className="h-8 w-8 text-brand-red" />
+                  <div>
+                    <h1 className="text-3xl font-bold text-white">Admin Dashboard</h1>
+                    <p className="text-brand-green mt-1">Manage your platform content and users</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-brand-green/60 text-sm">Welcome back, {user?.email}</p>
+                  <p className="text-brand-green/60 text-sm">Role: {roles.join(', ') || 'user'}</p>
+                </div>
               </div>
-              <p className="text-brand-green mt-2">Manage content and users</p>
             </div>
           </div>
 
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <div key={tab.id} className="terminal-window hover-glow transition-all duration-300">
+                  <div className="terminal-header">
+                    <div className="terminal-dots">
+                      <div className="terminal-dot dot-red"></div>
+                      <div className="terminal-dot dot-yellow"></div>
+                      <div className="terminal-dot dot-green"></div>
+                    </div>
+                  </div>
+                  <div className="p-6 text-center">
+                    <Icon className="h-8 w-8 text-brand-red mx-auto mb-3" />
+                    <div className="text-2xl font-bold text-white mb-1">{tab.count}</div>
+                    <div className="text-brand-green text-sm">{tab.name}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
           {/* Tabs */}
-          <div className="flex space-x-1 mb-8">
+          <div className="flex space-x-1 mb-8 overflow-x-auto">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center space-x-2 px-6 py-3 rounded-t-lg font-medium transition-all ${
+                  className={`flex items-center space-x-2 px-6 py-3 rounded-t-lg font-medium transition-all whitespace-nowrap ${
                     activeTab === tab.id
                       ? 'bg-brand-red text-white'
                       : 'bg-brand-darker text-brand-green hover:bg-brand-red/20'
@@ -172,129 +282,13 @@ const Admin = () => {
             </div>
             
             <div className="p-6">
-              {/* Blogs Tab */}
-              {activeTab === 'blogs' && (
-                <div>
-                  <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-bold text-white">Blog Posts</h2>
-                    <button className="bg-brand-red hover:bg-brand-accent-red text-white px-4 py-2 rounded-lg flex items-center space-x-2">
-                      <Plus size={16} />
-                      <span>New Post</span>
-                    </button>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    {blogs.map((blog: any) => (
-                      <div key={blog.id} className="bg-brand-darker p-4 rounded-lg border border-brand-green/20">
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <h3 className="text-white font-medium">{blog.title}</h3>
-                            <p className="text-brand-green/80 text-sm mt-1">{blog.excerpt}</p>
-                            <div className="flex items-center space-x-4 mt-2 text-xs text-brand-green/60">
-                              <span>By {blog.author_name}</span>
-                              <span>{new Date(blog.created_at).toLocaleDateString()}</span>
-                              <span className={`px-2 py-1 rounded ${blog.published ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
-                                {blog.published ? 'Published' : 'Draft'}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="flex space-x-2">
-                            <button className="text-brand-green hover:text-brand-red p-2">
-                              <Edit size={16} />
-                            </button>
-                            <button 
-                              onClick={() => deleteBlog(blog.id)}
-                              className="text-brand-green hover:text-brand-red p-2"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Events Tab */}
-              {activeTab === 'events' && (
-                <div>
-                  <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-bold text-white">Events</h2>
-                    <button className="bg-brand-red hover:bg-brand-accent-red text-white px-4 py-2 rounded-lg flex items-center space-x-2">
-                      <Plus size={16} />
-                      <span>New Event</span>
-                    </button>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    {events.map((event: any) => (
-                      <div key={event.id} className="bg-brand-darker p-4 rounded-lg border border-brand-green/20">
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <h3 className="text-white font-medium">{event.title}</h3>
-                            <p className="text-brand-green/80 text-sm mt-1">{event.description}</p>
-                            <div className="flex items-center space-x-4 mt-2 text-xs text-brand-green/60">
-                              <span>{new Date(event.event_date).toLocaleDateString()}</span>
-                              <span>{event.event_time}</span>
-                              <span>{event.location}</span>
-                              <span className={`px-2 py-1 rounded ${
-                                event.status === 'upcoming' ? 'bg-blue-500/20 text-blue-400' :
-                                event.status === 'completed' ? 'bg-green-500/20 text-green-400' :
-                                'bg-red-500/20 text-red-400'
-                              }`}>
-                                {event.status}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="flex space-x-2">
-                            <button className="text-brand-green hover:text-brand-red p-2">
-                              <Edit size={16} />
-                            </button>
-                            <button 
-                              onClick={() => deleteEvent(event.id)}
-                              className="text-brand-green hover:text-brand-red p-2"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Users Tab */}
+              {activeTab === 'blogs' && <BlogManagement />}
+              {activeTab === 'events' && <EventManagement />}
+              {activeTab === 'projects' && <ProjectManagement />}
               {activeTab === 'users' && (
                 <div>
-                  <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-bold text-white">User Roles</h2>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    {users.map((userRole: any) => (
-                      <div key={userRole.id} className="bg-brand-darker p-4 rounded-lg border border-brand-green/20">
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <p className="text-white font-medium">User ID: {userRole.user_id}</p>
-                            <div className="flex items-center space-x-2 mt-1">
-                              <span className={`px-2 py-1 rounded text-xs ${
-                                userRole.role === 'admin' ? 'bg-red-500/20 text-red-400' :
-                                userRole.role === 'moderator' ? 'bg-yellow-500/20 text-yellow-400' :
-                                'bg-green-500/20 text-green-400'
-                              }`}>
-                                {userRole.role}
-                              </span>
-                              <span className="text-brand-green/60 text-xs">
-                                Since {new Date(userRole.created_at).toLocaleDateString()}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <h2 className="text-xl font-bold text-white mb-4">User Management</h2>
+                  <p className="text-brand-green">User management features coming soon...</p>
                 </div>
               )}
             </div>

@@ -1,16 +1,32 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import Navigation from '../components/Navigation';
-import MatrixRain from '../components/MatrixRain';
-import Footer from '../components/Footer';
-import { Calendar, MapPin, Users, Clock, Trophy, Code, Shield } from 'lucide-react';
+import { Calendar, MapPin, Users, Clock, ExternalLink } from 'lucide-react';
+import Navigation from '@/components/Navigation';
+import MatrixRain from '@/components/MatrixRain';
+import Footer from '@/components/Footer';
+import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 
+interface Event {
+  id: string;
+  title: string;
+  description: string;
+  event_date: string;
+  event_time: string;
+  location: string;
+  event_type: string;
+  participants: number;
+  status: string;
+}
+
 const Events = () => {
-  const [events, setEvents] = useState([]);
-  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('All');
+
+  const eventTypes = ['All', 'CTF', 'Workshop', 'Conference', 'Meetup'];
 
   useEffect(() => {
     fetchEvents();
@@ -26,10 +42,9 @@ const Events = () => {
       if (error) throw error;
       setEvents(data || []);
     } catch (error: any) {
-      console.error('Error fetching events:', error);
       toast({
         title: "Error",
-        description: "Failed to load events",
+        description: error.message,
         variant: "destructive"
       });
     } finally {
@@ -37,35 +52,18 @@ const Events = () => {
     }
   };
 
-  const getEventIcon = (type: string) => {
-    switch (type) {
-      case 'Competition': return Trophy;
-      case 'Workshop': return Code;
-      case 'Training': return Shield;
-      default: return Users;
-    }
-  };
+  const filteredEvents = filter === 'All' 
+    ? events 
+    : events.filter(event => event.event_type === filter);
 
-  const getEventColor = (type: string) => {
-    switch (type) {
-      case 'Competition': return 'text-yellow-400';
-      case 'Workshop': return 'text-blue-400';
-      case 'Training': return 'text-brand-red';
-      default: return 'text-brand-green';
-    }
+  const handleJoinTelegram = () => {
+    window.open('https://t.me/yekolotemari', '_blank', 'noopener,noreferrer');
   };
-
-  const isUpcoming = (eventDate: string) => {
-    return new Date(eventDate) >= new Date();
-  };
-
-  const upcomingEvents = events.filter((event: any) => isUpcoming(event.event_date));
-  const pastEvents = events.filter((event: any) => !isUpcoming(event.event_date));
 
   if (loading) {
     return (
       <div className="min-h-screen bg-brand-dark flex items-center justify-center">
-        <div className="text-brand-green text-xl">Loading events...</div>
+        <div className="text-brand-green text-xl">Loading...</div>
       </div>
     );
   }
@@ -79,185 +77,117 @@ const Events = () => {
         <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="text-center mb-12">
-            <div className="terminal-window max-w-4xl mx-auto p-8">
-              <div className="terminal-header mb-6">
-                <div className="terminal-dots">
-                  <div className="terminal-dot dot-red"></div>
-                  <div className="terminal-dot dot-yellow"></div>
-                  <div className="terminal-dot dot-green"></div>
-                </div>
-              </div>
-              <h1 className="text-4xl lg:text-5xl font-bold text-white mb-6 glow-text">
-                Community <span className="text-brand-red">Events</span>
-              </h1>
-              <p className="text-xl text-brand-green">
-                Workshops, competitions, and meetups for the cybersecurity community
-              </p>
-            </div>
+            <h1 className="text-4xl lg:text-5xl font-bold text-white mb-6 glow-text">
+              Upcoming <span className="text-brand-red">Events</span>
+            </h1>
+            <p className="text-xl text-brand-green max-w-2xl mx-auto mb-8">
+              Join our cybersecurity events, workshops, and competitions to enhance your skills and network with fellow hackers.
+            </p>
+            
+            <Button
+              onClick={handleJoinTelegram}
+              className="bg-brand-red hover:bg-brand-accent-red text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 hover-glow"
+            >
+              <ExternalLink size={20} className="mr-2" />
+              Join Telegram Community
+            </Button>
           </div>
 
-          {/* Upcoming Events */}
-          <section className="mb-16">
-            <h2 className="text-3xl font-bold text-white mb-8 text-center">
-              Upcoming <span className="text-brand-red">Events</span>
-            </h2>
-            {upcomingEvents.length === 0 ? (
-              <div className="text-center">
-                <div className="terminal-window max-w-md mx-auto p-8">
-                  <div className="terminal-header mb-4">
+          {/* Filter Buttons */}
+          <div className="flex flex-wrap gap-4 mb-12 justify-center">
+            {eventTypes.map(type => (
+              <button
+                key={type}
+                onClick={() => setFilter(type)}
+                className={`px-6 py-3 rounded-lg border transition-all ${
+                  filter === type
+                    ? 'bg-brand-red text-white border-brand-red'
+                    : 'bg-brand-darker text-brand-green border-brand-green/20 hover:border-brand-red hover:text-brand-red'
+                }`}
+              >
+                {type}
+              </button>
+            ))}
+          </div>
+
+          {/* Events Grid */}
+          <div className="grid gap-8 lg:gap-12">
+            {filteredEvents.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-brand-green/80 text-lg">No events found for the selected filter.</p>
+              </div>
+            ) : (
+              filteredEvents.map((event) => (
+                <div key={event.id} className="terminal-window hover-glow transition-all duration-300">
+                  <div className="terminal-header">
                     <div className="terminal-dots">
                       <div className="terminal-dot dot-red"></div>
                       <div className="terminal-dot dot-yellow"></div>
                       <div className="terminal-dot dot-green"></div>
                     </div>
                   </div>
-                  <p className="text-brand-green">No upcoming events scheduled</p>
-                  <p className="text-brand-green/60 text-sm mt-2">Check back soon for new events!</p>
-                </div>
-              </div>
-            ) : (
-              <div className="grid lg:grid-cols-2 gap-8">
-                {upcomingEvents.map((event: any) => {
-                  const EventIcon = getEventIcon(event.event_type);
-                  const eventColorClass = getEventColor(event.event_type);
-                  return (
-                    <div key={event.id} className="terminal-window hover-glow transition-all duration-300">
-                      <div className="terminal-header">
-                        <div className="terminal-dots">
-                          <div className="terminal-dot dot-red"></div>
-                          <div className="terminal-dot dot-yellow"></div>
-                          <div className="terminal-dot dot-green"></div>
-                        </div>
-                      </div>
-                      
-                      <div className="p-6">
-                        <div className="flex items-start justify-between mb-4">
-                          <div className={`flex items-center space-x-2 ${eventColorClass}`}>
-                            <EventIcon className="h-5 w-5" />
-                            <span className="text-sm font-medium">{event.event_type}</span>
-                          </div>
-                          <span className="bg-brand-red text-white px-3 py-1 rounded-full text-xs font-bold">
-                            UPCOMING
+                  <div className="p-8">
+                    <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-4 mb-4">
+                          <h2 className="text-2xl lg:text-3xl font-bold text-white">
+                            {event.title}
+                          </h2>
+                          <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                            event.status === 'upcoming' ? 'bg-blue-500/20 text-blue-400' :
+                            event.status === 'completed' ? 'bg-green-500/20 text-green-400' :
+                            'bg-red-500/20 text-red-400'
+                          }`}>
+                            {event.status}
                           </span>
                         </div>
-
-                        <h3 className="text-xl font-bold text-white mb-3">{event.title}</h3>
-                        <p className="text-brand-green mb-4">{event.description}</p>
-
-                        <div className="space-y-2 mb-6">
-                          <div className="flex items-center space-x-2 text-brand-green/80">
-                            <Calendar className="h-4 w-4" />
-                            <span>{new Date(event.event_date).toLocaleDateString('en-US', { 
-                              weekday: 'long', 
-                              year: 'numeric', 
-                              month: 'long', 
-                              day: 'numeric' 
-                            })}</span>
-                          </div>
-                          <div className="flex items-center space-x-2 text-brand-green/80">
-                            <Clock className="h-4 w-4" />
-                            <span>{event.event_time}</span>
-                          </div>
-                          <div className="flex items-center space-x-2 text-brand-green/80">
-                            <MapPin className="h-4 w-4" />
-                            <span>{event.location}</span>
-                          </div>
-                          <div className="flex items-center space-x-2 text-brand-green/80">
-                            <Users className="h-4 w-4" />
-                            <span>{event.participants} participants expected</span>
-                          </div>
-                        </div>
-
-                        <button className="w-full bg-brand-red hover:bg-brand-accent-red text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 hover-glow">
-                          Register Now
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </section>
-
-          {/* Past Events */}
-          {pastEvents.length > 0 && (
-            <section>
-              <h2 className="text-3xl font-bold text-white mb-8 text-center">
-                Past <span className="text-brand-red">Events</span>
-              </h2>
-              <div className="grid lg:grid-cols-2 gap-8">
-                {pastEvents.map((event: any) => {
-                  const EventIcon = getEventIcon(event.event_type);
-                  const eventColorClass = getEventColor(event.event_type);
-                  return (
-                    <div key={event.id} className="terminal-window opacity-75 hover:opacity-100 transition-all duration-300">
-                      <div className="terminal-header">
-                        <div className="terminal-dots">
-                          <div className="terminal-dot dot-red"></div>
-                          <div className="terminal-dot dot-yellow"></div>
-                          <div className="terminal-dot dot-green"></div>
-                        </div>
-                      </div>
-                      
-                      <div className="p-6">
-                        <div className="flex items-start justify-between mb-4">
-                          <div className={`flex items-center space-x-2 ${eventColorClass}`}>
-                            <EventIcon className="h-5 w-5" />
-                            <span className="text-sm font-medium">{event.event_type}</span>
-                          </div>
-                          <span className="bg-gray-600 text-white px-3 py-1 rounded-full text-xs font-bold">
-                            COMPLETED
-                          </span>
-                        </div>
-
-                        <h3 className="text-xl font-bold text-white mb-3">{event.title}</h3>
-                        <p className="text-brand-green mb-4">{event.description}</p>
-
-                        <div className="space-y-2 mb-6">
-                          <div className="flex items-center space-x-2 text-brand-green/60">
-                            <Calendar className="h-4 w-4" />
+                        
+                        <p className="text-brand-green/80 text-lg leading-relaxed mb-6">
+                          {event.description}
+                        </p>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                          <div className="flex items-center space-x-3 text-brand-green/60">
+                            <Calendar size={20} />
                             <span>{new Date(event.event_date).toLocaleDateString()}</span>
                           </div>
-                          <div className="flex items-center space-x-2 text-brand-green/60">
-                            <Users className="h-4 w-4" />
-                            <span>{event.participants} participants attended</span>
+                          <div className="flex items-center space-x-3 text-brand-green/60">
+                            <Clock size={20} />
+                            <span>{event.event_time}</span>
+                          </div>
+                          <div className="flex items-center space-x-3 text-brand-green/60">
+                            <MapPin size={20} />
+                            <span>{event.location}</span>
+                          </div>
+                          <div className="flex items-center space-x-3 text-brand-green/60">
+                            <Users size={20} />
+                            <span>{event.participants} participants</span>
                           </div>
                         </div>
-
-                        <button className="w-full border border-brand-green/30 text-brand-green hover:bg-brand-green hover:text-brand-dark font-bold py-3 px-4 rounded-lg transition-all duration-300">
-                          View Recap
-                        </button>
+                        
+                        <div className="flex items-center gap-4">
+                          <span className="px-4 py-2 bg-brand-red/20 text-brand-red rounded-lg">
+                            {event.event_type}
+                          </span>
+                          {event.status === 'upcoming' && (
+                            <Button
+                              onClick={handleJoinTelegram}
+                              className="bg-brand-green hover:bg-brand-green/80 text-brand-dark"
+                            >
+                              Join Event
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            </section>
-          )}
-
-          {/* CTA */}
-          <div className="text-center mt-16">
-            <div className="terminal-window max-w-2xl mx-auto p-8">
-              <div className="terminal-header mb-6">
-                <div className="terminal-dots">
-                  <div className="terminal-dot dot-red"></div>
-                  <div className="terminal-dot dot-yellow"></div>
-                  <div className="terminal-dot dot-green"></div>
+                  </div>
                 </div>
-              </div>
-              <h3 className="text-2xl font-bold text-white mb-4">
-                Stay <span className="text-brand-red">Updated</span>
-              </h3>
-              <p className="text-brand-green mb-6">
-                Join our Telegram group to get notified about upcoming events and workshops.
-              </p>
-              <button className="bg-brand-red hover:bg-brand-accent-red text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 hover-glow">
-                Join Telegram
-              </button>
-            </div>
+              ))
+            )}
           </div>
         </div>
       </div>
+      
       <Footer />
     </div>
   );

@@ -2,6 +2,8 @@
 import { Github, MessageCircle, Mail, Shield } from 'lucide-react';
 
 const Footer = () => {
+  const currentYear = new Date().getFullYear();
+  
   return (
     <footer className="bg-brand-darker border-t border-brand-green/20 py-12 px-4 relative overflow-hidden">
       <div className="max-w-6xl mx-auto">
@@ -54,10 +56,10 @@ const Footer = () => {
               <a href="#" className="text-brand-green hover:text-brand-red transition-colors">
                 <Github size={20} />
               </a>
-              <a href="#" className="text-brand-green hover:text-brand-red transition-colors">
+              <a href="https://t.me/yekolotemari" target="_blank" rel="noopener noreferrer" className="text-brand-green hover:text-brand-red transition-colors">
                 <MessageCircle size={20} />
               </a>
-              <a href="#" className="text-brand-green hover:text-brand-red transition-colors">
+              <a href="mailto:info@yekolotemari.org" className="text-brand-green hover:text-brand-red transition-colors">
                 <Mail size={20} />
               </a>
             </div>
@@ -70,7 +72,7 @@ const Footer = () => {
 
         <div className="border-t border-brand-green/20 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
           <p className="text-brand-green/60 text-sm">
-            © 2024 Yekolo Temari. All rights reserved.
+            © {currentYear} Yekolo Temari. All rights reserved.
           </p>
           <div className="flex items-center space-x-2 text-brand-green/60 text-sm mt-4 md:mt-0">
             <Shield size={16} />

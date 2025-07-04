@@ -20,6 +20,7 @@ export type Database = {
           id: string
           published: boolean | null
           read_time: string | null
+          status: string | null
           tags: string[] | null
           title: string
           updated_at: string | null
@@ -34,6 +35,7 @@ export type Database = {
           id?: string
           published?: boolean | null
           read_time?: string | null
+          status?: string | null
           tags?: string[] | null
           title: string
           updated_at?: string | null
@@ -48,6 +50,7 @@ export type Database = {
           id?: string
           published?: boolean | null
           read_time?: string | null
+          status?: string | null
           tags?: string[] | null
           title?: string
           updated_at?: string | null
@@ -92,6 +95,51 @@ export type Database = {
           participants?: number | null
           status?: string | null
           title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      projects: {
+        Row: {
+          category: string
+          created_at: string | null
+          description: string
+          featured: boolean | null
+          forks: number | null
+          github_url: string
+          id: string
+          language: string | null
+          name: string
+          stars: number | null
+          tags: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          description: string
+          featured?: boolean | null
+          forks?: number | null
+          github_url: string
+          id?: string
+          language?: string | null
+          name: string
+          stars?: number | null
+          tags?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          description?: string
+          featured?: boolean | null
+          forks?: number | null
+          github_url?: string
+          id?: string
+          language?: string | null
+          name?: string
+          stars?: number | null
+          tags?: string[] | null
           updated_at?: string | null
         }
         Relationships: []

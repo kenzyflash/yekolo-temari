@@ -40,19 +40,14 @@ const Admin = () => {
         return;
       }
       if (!isAdmin()) {
-        console.log('User is not admin, showing access denied');
-        toast({
-          title: "Access Denied",
-          description: "You don't have permission to access this page. Please contact an administrator if you believe this is an error.",
-          variant: "destructive"
-        });
-        navigate('/');
+        console.log('User is not admin, staying on admin page to show access denied');
+        // Don't redirect, just show the access denied message
         return;
       }
       console.log('User is admin, fetching stats');
       fetchStats();
     }
-  }, [user, authLoading, rolesLoading, isAdmin, navigate, toast]);
+  }, [user, authLoading, rolesLoading, isAdmin, navigate]);
 
   const fetchStats = async () => {
     try {
@@ -135,6 +130,12 @@ const Admin = () => {
         </div>
       </div>
     );
+  }
+
+  // Redirect to auth if not logged in
+  if (!user) {
+    navigate('/auth');
+    return null;
   }
 
   // Show access denied if not admin, but provide a way to become admin for testing

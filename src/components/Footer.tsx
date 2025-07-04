@@ -1,5 +1,5 @@
 
-import { Github, MessageCircle, Mail, Shield } from 'lucide-react';
+import { Github, MessageCircle, Mail, Shield, LogIn } from 'lucide-react';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -46,10 +46,16 @@ const Footer = () => {
               <li><a href="#" className="text-brand-green/80 hover:text-brand-red transition-colors">Code of Conduct</a></li>
               <li><a href="#" className="text-brand-green/80 hover:text-brand-red transition-colors">Contributing</a></li>
               <li><a href="#" className="text-brand-green/80 hover:text-brand-red transition-colors">Resources</a></li>
+              <li>
+                <a href="/auth" className="text-brand-green/80 hover:text-brand-red transition-colors flex items-center space-x-2">
+                  <LogIn size={16} />
+                  <span>Login</span>
+                </a>
+              </li>
             </ul>
           </div>
 
-          {/* Contact */}
+          {/* Connect */}
           <div>
             <h4 className="text-white font-bold mb-4">Connect</h4>
             <div className="flex space-x-4 mb-4">

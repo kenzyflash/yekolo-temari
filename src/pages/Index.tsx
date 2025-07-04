@@ -1,9 +1,9 @@
-
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight, Terminal, Shield, Code, Users, Calendar, Github } from 'lucide-react';
 import Navigation from '../components/Navigation';
 import MatrixRain from '../components/MatrixRain';
+import Footer from '../components/Footer';
 
 const Index = () => {
   const [displayText, setDisplayText] = useState('');

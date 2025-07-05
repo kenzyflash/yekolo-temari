@@ -33,7 +33,7 @@ const UserManagement = () => {
 
   const fetchUsers = async () => {
     try {
-      // Get all users from auth.users (this requires service role, so we'll work with user_roles)
+      // Get all users from user_roles table
       const { data: userRoles, error: rolesError } = await supabase
         .from('user_roles')
         .select('user_id, role');
@@ -85,7 +85,7 @@ const UserManagement = () => {
     setFilteredUsers(filtered);
   };
 
-  const updateUserRole = async (userId: string, newRole: string) => {
+  const updateUserRole = async (userId: string, newRole: 'admin' | 'user') => {
     try {
       // Remove existing roles for this user
       await supabase
@@ -96,7 +96,7 @@ const UserManagement = () => {
       // Add new role
       const { error } = await supabase
         .from('user_roles')
-        .insert([{ user_id: userId, role: newRole }]);
+        .insert({ user_id: userId, role: newRole });
 
       if (error) throw error;
 
@@ -191,7 +191,7 @@ const UserManagement = () => {
                   
                   <Select
                     value={user.roles[0] || 'user'}
-                    onValueChange={(value) => updateUserRole(user.id, value)}
+                    onValueChange={(value: 'admin' | 'user') => updateUserRole(user.id, value)}
                   >
                     <SelectTrigger className="w-32 bg-brand-darker border-brand-green/20 text-white">
                       <SelectValue />

@@ -1,11 +1,17 @@
 
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Terminal, Shield, Code, Calendar, Users, Github, MessageCircle } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Menu, X, Terminal, Shield, Code, Calendar, Users, Github, MessageCircle, LogOut } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+  const { toast } = useToast();
 
   const navItems = [
     { name: 'Home', path: '/', icon: Terminal },
@@ -17,6 +23,31 @@ const Navigation = () => {
   ];
 
   const isActive = (path: string) => location.pathname === path;
+
+  const handleLogout = async () => {
+    try {
+      const { error } = await signOut();
+      if (error) {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: "Logged out successfully"
+        });
+        navigate('/');
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive"
+      });
+    }
+  };
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-brand-darker/95 backdrop-blur-sm border-b border-brand-green/20">
@@ -53,6 +84,34 @@ const Navigation = () => {
                 </Link>
               );
             })}
+            
+            {/* Auth buttons */}
+            {user ? (
+              <div className="flex items-center space-x-2 ml-4">
+                <Link
+                  to="/dashboard"
+                  className="text-brand-green hover:bg-brand-red/20 hover:text-white px-4 py-2 rounded-lg transition-all duration-300"
+                >
+                  Dashboard
+                </Link>
+                <Button
+                  onClick={handleLogout}
+                  variant="ghost"
+                  size="sm"
+                  className="text-brand-green hover:bg-brand-red hover:text-white"
+                >
+                  <LogOut size={18} />
+                  <span className="ml-1">Logout</span>
+                </Button>
+              </div>
+            ) : (
+              <Link
+                to="/auth"
+                className="text-brand-green hover:bg-brand-red/20 hover:text-white px-4 py-2 rounded-lg transition-all duration-300 ml-4"
+              >
+                Login
+              </Link>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -95,6 +154,39 @@ const Navigation = () => {
                   </Link>
                 );
               })}
+              
+              {/* Mobile Auth buttons */}
+              {user ? (
+                <>
+                  <Link
+                    to="/dashboard"
+                    onClick={() => setIsOpen(false)}
+                    className="flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-300 text-brand-green hover:bg-brand-red/20 hover:text-white"
+                  >
+                    <Users size={20} />
+                    <span>Dashboard</span>
+                  </Link>
+                  <button
+                    onClick={() => {
+                      handleLogout();
+                      setIsOpen(false);
+                    }}
+                    className="flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-300 text-brand-green hover:bg-brand-red/20 hover:text-white w-full text-left"
+                  >
+                    <LogOut size={20} />
+                    <span>Logout</span>
+                  </button>
+                </>
+              ) : (
+                <Link
+                  to="/auth"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-300 text-brand-green hover:bg-brand-red/20 hover:text-white"
+                >
+                  <Users size={20} />
+                  <span>Login</span>
+                </Link>
+              )}
             </div>
           </div>
         )}

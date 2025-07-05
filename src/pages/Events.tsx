@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Calendar, MapPin, Users, Clock, ExternalLink } from 'lucide-react';
@@ -6,7 +7,7 @@ import MatrixRain from '@/components/MatrixRain';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/hooks/useAuth';
 
 interface Event {
   id: string;
@@ -39,23 +40,32 @@ const Events = () => {
 
   const fetchEvents = async () => {
     try {
-      const { data, error } = await supabase
+      // First get all events
+      const { data: eventsData, error: eventsError } = await supabase
         .from('events')
-        .select(`
-          *,
-          event_participants(count)
-        `)
+        .select('*')
         .order('event_date', { ascending: true });
 
-      if (error) throw error;
+      if (eventsError) throw eventsError;
+
+      // Then get participant counts for each event
+      const eventsWithCounts = await Promise.all(
+        (eventsData || []).map(async (event) => {
+          const { data: participantData, error: participantError } = await supabase
+            .from('event_participants' as any)
+            .select('id', { count: 'exact' })
+            .eq('event_id', event.id);
+
+          const participantCount = participantError ? 0 : (participantData?.length || 0);
+          
+          return {
+            ...event,
+            participants: participantCount
+          };
+        })
+      );
       
-      // Update participants count with actual data
-      const eventsWithCount = data?.map(event => ({
-        ...event,
-        participants: event.event_participants?.[0]?.count || 0
-      })) || [];
-      
-      setEvents(eventsWithCount);
+      setEvents(eventsWithCounts);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -72,13 +82,13 @@ const Events = () => {
 
     try {
       const { data, error } = await supabase
-        .from('event_participants')
+        .from('event_participants' as any)
         .select('event_id')
         .eq('user_id', user.id);
 
       if (error) throw error;
       
-      const eventIds = new Set(data?.map(p => p.event_id) || []);
+      const eventIds = new Set((data || []).map((p: any) => p.event_id));
       setRegisteredEvents(eventIds);
     } catch (error: any) {
       console.error('Error fetching user registrations:', error);
@@ -99,7 +109,7 @@ const Events = () => {
       if (isRegistered) {
         // Unregister
         const { error } = await supabase
-          .from('event_participants')
+          .from('event_participants' as any)
           .delete()
           .eq('event_id', eventId)
           .eq('user_id', user.id);
@@ -119,7 +129,7 @@ const Events = () => {
       } else {
         // Register
         const { error } = await supabase
-          .from('event_participants')
+          .from('event_participants' as any)
           .insert([{
             event_id: eventId,
             user_id: user.id

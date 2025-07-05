@@ -31,24 +31,15 @@ const NotificationCenter = () => {
     if (!user) return;
 
     try {
-      // Use raw SQL query since notifications table might not be in types yet
-      const { data, error } = await supabase.rpc('get_user_notifications', {
-        user_uuid: user.id
-      });
+      // Direct table access with type casting
+      const { data, error } = await supabase
+        .from('notifications' as any)
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
 
-      if (error) {
-        // Fallback to direct table access if RPC doesn't exist
-        const { data: directData, error: directError } = await supabase
-          .from('notifications' as any)
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
-
-        if (directError) throw directError;
-        setNotifications(directData || []);
-      } else {
-        setNotifications(data || []);
-      }
+      if (error) throw error;
+      setNotifications(data as Notification[] || []);
     } catch (error: any) {
       console.log('Notification fetch error:', error);
       // Set empty array if table doesn't exist yet

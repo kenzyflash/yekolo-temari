@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -9,6 +8,7 @@ import MatrixRain from '@/components/MatrixRain';
 import BlogManagement from '@/components/admin/BlogManagement';
 import EventManagement from '@/components/admin/EventManagement';
 import ProjectManagement from '@/components/admin/ProjectManagement';
+import UserManagement from '@/components/admin/UserManagement';
 import { Settings, BookOpen, Calendar, FolderOpen, Users, Shield } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -41,7 +41,6 @@ const Admin = () => {
       }
       if (!isAdmin()) {
         console.log('User is not admin, staying on admin page to show access denied');
-        // Don't redirect, just show the access denied message
         return;
       }
       console.log('User is admin, fetching stats');
@@ -74,53 +73,6 @@ const Admin = () => {
     }
   };
 
-  // Add a manual admin role assignment for testing
-  const makeUserAdmin = async () => {
-    if (!user) return;
-    
-    try {
-      // First check if user already has admin role
-      const { data: existingRole } = await supabase
-        .from('user_roles')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('role', 'admin')
-        .single();
-
-      if (existingRole) {
-        toast({
-          title: "Info",
-          description: "You already have admin role",
-        });
-        return;
-      }
-
-      // Add admin role
-      const { error } = await supabase
-        .from('user_roles')
-        .insert([{
-          user_id: user.id,
-          role: 'admin'
-        }]);
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Admin role added successfully. Please refresh the page.",
-      });
-      
-      // Refresh the page to update roles
-      window.location.reload();
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
-  };
-
   if (authLoading || rolesLoading) {
     return (
       <div className="min-h-screen bg-brand-dark flex items-center justify-center">
@@ -138,7 +90,7 @@ const Admin = () => {
     return null;
   }
 
-  // Show access denied if not admin, but provide a way to become admin for testing
+  // Show access denied if not admin (removed the test admin access button)
   if (!isAdmin()) {
     return (
       <div className="min-h-screen bg-brand-dark relative overflow-hidden">
@@ -162,21 +114,9 @@ const Admin = () => {
                   You don't have permission to access the admin panel. 
                   Your current roles: {roles.length ? roles.join(', ') : 'user'}
                 </p>
-                <div className="space-y-4">
-                  <Button onClick={() => navigate('/')} className="bg-brand-red hover:bg-brand-accent-red">
-                    Return Home
-                  </Button>
-                  <div className="text-sm text-brand-green/60">
-                    <p>For testing purposes, you can temporarily grant yourself admin access:</p>
-                    <Button 
-                      onClick={makeUserAdmin}
-                      variant="outline"
-                      className="mt-2 border-brand-green text-brand-green hover:bg-brand-green hover:text-brand-dark"
-                    >
-                      Grant Admin Access (Testing)
-                    </Button>
-                  </div>
-                </div>
+                <Button onClick={() => navigate('/')} className="bg-brand-red hover:bg-brand-accent-red">
+                  Return Home
+                </Button>
               </div>
             </div>
           </div>
@@ -286,12 +226,7 @@ const Admin = () => {
               {activeTab === 'blogs' && <BlogManagement />}
               {activeTab === 'events' && <EventManagement />}
               {activeTab === 'projects' && <ProjectManagement />}
-              {activeTab === 'users' && (
-                <div>
-                  <h2 className="text-xl font-bold text-white mb-4">User Management</h2>
-                  <p className="text-brand-green">User management features coming soon...</p>
-                </div>
-              )}
+              {activeTab === 'users' && <UserManagement />}
             </div>
           </div>
         </div>

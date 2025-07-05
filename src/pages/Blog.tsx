@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -99,6 +98,14 @@ const Blog = () => {
     fetchPosts();
   };
 
+  const handleWriteArticle = () => {
+    if (!user) {
+      window.location.href = '/auth';
+      return;
+    }
+    window.location.href = '/dashboard';
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-brand-dark flex items-center justify-center">
@@ -140,15 +147,13 @@ const Blog = () => {
                 </div>
               </div>
               
-              {user && (
-                <Button
-                  onClick={() => setShowEditor(true)}
-                  className="bg-brand-red hover:bg-brand-accent-red text-white"
-                >
-                  <Plus size={16} className="mr-2" />
-                  Write Article
-                </Button>
-              )}
+              <Button
+                onClick={handleWriteArticle}
+                className="bg-brand-red hover:bg-brand-accent-red text-white"
+              >
+                <Plus size={16} className="mr-2" />
+                Write Article
+              </Button>
             </div>
 
             {/* Category Filters */}

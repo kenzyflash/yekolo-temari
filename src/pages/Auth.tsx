@@ -1,68 +1,116 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserRoles } from '@/hooks/useUserRoles';
+import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useToast } from '@/hooks/use-toast';
 import Navigation from '@/components/Navigation';
 import MatrixRain from '@/components/MatrixRain';
-import { Eye, EyeOff, User, Mail, Lock } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import Footer from '@/components/Footer';
 
 const Auth = () => {
-  const [isLogin, setIsLogin] = useState(true);
-  const [showPassword, setShowPassword] = useState(false);
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    name: ''
-  });
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  
-  const { signIn, signUp } = useAuth();
+  const { user, signIn, signUp } = useAuth();
+  const { isAdmin, loading: rolesLoading } = useUserRoles();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-      if (isLogin) {
-        const { error } = await signIn(formData.email, formData.password);
-        if (error) {
-          toast({
-            title: "Login Failed",
-            description: error.message,
-            variant: "destructive"
-          });
-        } else {
-          toast({
-            title: "Welcome back!",
-            description: "You have successfully logged in."
-          });
-          navigate('/');
-        }
+  useEffect(() => {
+    // Redirect authenticated users based on their role
+    if (user && !rolesLoading) {
+      if (isAdmin()) {
+        navigate('/admin');
       } else {
-        const { error } = await signUp(formData.email, formData.password, {
-          full_name: formData.name
+        navigate('/dashboard');
+      }
+    }
+  }, [user, isAdmin, rolesLoading, navigate]);
+
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) {
+      toast({
+        title: "Error",
+        description: "Please fill in all fields",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await signIn(email, password);
+      if (error) {
+        toast({
+          title: "Sign In Failed",
+          description: error.message,
+          variant: "destructive"
         });
-        if (error) {
-          toast({
-            title: "Signup Failed",
-            description: error.message,
-            variant: "destructive"
-          });
-        } else {
-          toast({
-            title: "Account Created!",
-            description: "Please check your email to verify your account."
-          });
-          setIsLogin(true);
-        }
+      } else {
+        toast({
+          title: "Success",
+          description: "Signed in successfully!"
+        });
+        // Redirect will be handled by useEffect
       }
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message || "An unexpected error occurred",
+        description: "An unexpected error occurred",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) {
+      toast({
+        title: "Error",
+        description: "Please fill in all fields",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (password.length < 6) {
+      toast({
+        title: "Error",
+        description: "Password must be at least 6 characters long",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await signUp(email, password);
+      if (error) {
+        toast({
+          title: "Sign Up Failed",
+          description: error.message,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: "Account created successfully! Please check your email for verification."
+        });
+        // User will be redirected after email verification
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
         variant: "destructive"
       });
     } finally {
@@ -77,107 +125,102 @@ const Auth = () => {
       
       <div className="relative z-10 pt-24 pb-16 px-4">
         <div className="max-w-md mx-auto">
-          <div className="terminal-window">
-            <div className="terminal-header">
-              <div className="terminal-dots">
-                <div className="terminal-dot dot-red"></div>
-                <div className="terminal-dot dot-yellow"></div>
-                <div className="terminal-dot dot-green"></div>
+          <Card className="bg-brand-darker border-brand-green/20">
+            <CardHeader className="text-center">
+              <div className="mx-auto mb-4">
+                <img 
+                  src="/lovable-uploads/b0a82a80-d078-4caf-92be-cca56b1efd1e.png" 
+                  alt="Yekolo Temari Logo" 
+                  className="h-12 w-auto filter brightness-0 invert mx-auto"
+                />
               </div>
-            </div>
+              <CardTitle className="text-2xl text-white">Welcome Back</CardTitle>
+              <CardDescription className="text-brand-green">
+                Sign in to your account or create a new one
+              </CardDescription>
+            </CardHeader>
             
-            <div className="p-8">
-              <div className="text-center mb-8">
-                <h1 className="text-3xl font-bold text-white mb-2">
-                  {isLogin ? 'Welcome Back' : 'Join the Community'}
-                </h1>
-                <p className="text-brand-green">
-                  {isLogin ? 'Sign in to your account' : 'Create your hacker account'}
-                </p>
-              </div>
-
-              <form onSubmit={handleSubmit} className="space-y-6">
-                {!isLogin && (
-                  <div>
-                    <label className="block text-brand-green text-sm font-medium mb-2">
-                      Full Name
-                    </label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-brand-green h-5 w-5" />
-                      <input
-                        type="text"
-                        value={formData.name}
-                        onChange={(e) => setFormData({...formData, name: e.target.value})}
-                        className="w-full pl-10 pr-4 py-3 bg-brand-darker border border-brand-green/30 rounded-lg text-brand-green placeholder-brand-green/60 focus:outline-none focus:border-brand-red focus:ring-2 focus:ring-brand-red/20"
-                        placeholder="Enter your full name"
-                        required={!isLogin}
+            <CardContent>
+              <Tabs defaultValue="signin" className="w-full">
+                <TabsList className="grid w-full grid-cols-2 bg-brand-dark">
+                  <TabsTrigger value="signin" className="data-[state=active]:bg-brand-red">
+                    Sign In
+                  </TabsTrigger>
+                  <TabsTrigger value="signup" className="data-[state=active]:bg-brand-red">
+                    Sign Up
+                  </TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="signin" className="space-y-4 mt-6">
+                  <form onSubmit={handleSignIn} className="space-y-4">
+                    <div>
+                      <Input
+                        type="email"
+                        placeholder="Email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="bg-brand-dark border-brand-green/20 text-white"
+                        required
                       />
                     </div>
-                  </div>
-                )}
-
-                <div>
-                  <label className="block text-brand-green text-sm font-medium mb-2">
-                    Email
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-brand-green h-5 w-5" />
-                    <input
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({...formData, email: e.target.value})}
-                      className="w-full pl-10 pr-4 py-3 bg-brand-darker border border-brand-green/30 rounded-lg text-brand-green placeholder-brand-green/60 focus:outline-none focus:border-brand-red focus:ring-2 focus:ring-brand-red/20"
-                      placeholder="your@email.com"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-brand-green text-sm font-medium mb-2">
-                    Password
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-brand-green h-5 w-5" />
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      value={formData.password}
-                      onChange={(e) => setFormData({...formData, password: e.target.value})}
-                      className="w-full pl-10 pr-12 py-3 bg-brand-darker border border-brand-green/30 rounded-lg text-brand-green placeholder-brand-green/60 focus:outline-none focus:border-brand-red focus:ring-2 focus:ring-brand-red/20"
-                      placeholder="Enter your password"
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-brand-green hover:text-brand-red"
+                    <div>
+                      <Input
+                        type="password"
+                        placeholder="Password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="bg-brand-dark border-brand-green/20 text-white"
+                        required
+                      />
+                    </div>
+                    <Button
+                      type="submit"
+                      className="w-full bg-brand-red hover:bg-brand-accent-red"
+                      disabled={loading}
                     >
-                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                    </button>
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full bg-brand-red hover:bg-brand-accent-red text-white font-bold py-3 px-4 rounded-lg transition-all duration-300 hover-glow disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {loading ? 'Processing...' : (isLogin ? 'Sign In' : 'Create Account')}
-                </button>
-              </form>
-
-              <div className="mt-6 text-center">
-                <button
-                  onClick={() => setIsLogin(!isLogin)}
-                  className="text-brand-green hover:text-brand-red transition-colors"
-                >
-                  {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
-                </button>
-              </div>
-            </div>
-          </div>
+                      {loading ? 'Signing In...' : 'Sign In'}
+                    </Button>
+                  </form>
+                </TabsContent>
+                
+                <TabsContent value="signup" className="space-y-4 mt-6">
+                  <form onSubmit={handleSignUp} className="space-y-4">
+                    <div>
+                      <Input
+                        type="email"
+                        placeholder="Email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="bg-brand-dark border-brand-green/20 text-white"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Input
+                        type="password"
+                        placeholder="Password (min. 6 characters)"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="bg-brand-dark border-brand-green/20 text-white"
+                        required
+                      />
+                    </div>
+                    <Button
+                      type="submit"
+                      className="w-full bg-brand-red hover:bg-brand-accent-red"
+                      disabled={loading}
+                    >
+                      {loading ? 'Creating Account...' : 'Sign Up'}
+                    </Button>
+                  </form>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
         </div>
       </div>
+      
+      <Footer />
     </div>
   );
 };

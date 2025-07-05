@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -39,7 +38,7 @@ const NotificationCenter = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setNotifications(data as Notification[] || []);
+      setNotifications((data as unknown as Notification[]) || []);
     } catch (error: any) {
       console.log('Notification fetch error:', error);
       // Set empty array if table doesn't exist yet

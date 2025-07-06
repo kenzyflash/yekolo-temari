@@ -40,6 +40,8 @@ export const useUserRoles = () => {
       }
     };
 
+    // Reset loading state when user changes
+    setLoading(true);
     fetchUserRoles();
   }, [user]);
 

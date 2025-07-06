@@ -87,6 +87,21 @@ const BlogPost = () => {
     fetchPost();
   };
 
+  // Function to convert markdown content to HTML with proper image rendering
+  const renderContent = (content: string) => {
+    // Convert markdown image syntax ![alt](url) to HTML img tags
+    const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+    const htmlContent = content.replace(imageRegex, (match, alt, url) => {
+      return `<img src="${url}" alt="${alt}" class="max-w-full h-auto rounded-lg my-4 mx-auto block" />`;
+    });
+
+    // Convert other basic markdown
+    return htmlContent
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/\n/g, '<br />');
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-brand-dark flex items-center justify-center">
@@ -185,10 +200,10 @@ const BlogPost = () => {
                 </div>
               )}
 
-              {/* Content */}
+              {/* Content with proper image rendering */}
               <div 
                 className="prose prose-invert prose-lg max-w-none text-white"
-                dangerouslySetInnerHTML={{ __html: post.content }}
+                dangerouslySetInnerHTML={{ __html: renderContent(post.content) }}
               />
             </div>
           </article>

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -27,13 +28,16 @@ const Auth = () => {
     // Only redirect when both user is loaded and roles are loaded
     if (user && !rolesLoading) {
       console.log('User authenticated, checking admin status:', isAdmin());
-      if (isAdmin()) {
-        console.log('User is admin, redirecting to /admin');
-        navigate('/admin');
-      } else {
-        console.log('User is not admin, redirecting to /dashboard');
-        navigate('/dashboard');
-      }
+      // Add a small delay to ensure role data is fully processed
+      setTimeout(() => {
+        if (isAdmin()) {
+          console.log('User is admin, redirecting to /admin');
+          navigate('/admin');
+        } else {
+          console.log('User is not admin, redirecting to /dashboard');
+          navigate('/dashboard');
+        }
+      }, 100);
     }
   }, [user, rolesLoading, isAdmin, navigate]);
 

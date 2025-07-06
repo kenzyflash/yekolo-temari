@@ -1,5 +1,7 @@
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Calendar, Clock, User, Search, Plus, Edit2 } from 'lucide-react';
 import Navigation from '@/components/Navigation';
@@ -26,6 +28,7 @@ interface BlogPost {
 
 const Blog = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [filteredPosts, setFilteredPosts] = useState<BlogPost[]>([]);
@@ -100,10 +103,14 @@ const Blog = () => {
 
   const handleWriteArticle = () => {
     if (!user) {
-      window.location.href = '/auth';
+      navigate('/auth');
       return;
     }
-    window.location.href = '/dashboard';
+    navigate('/dashboard');
+  };
+
+  const handleReadMore = (postId: string) => {
+    navigate(`/blog/${postId}`);
   };
 
   if (loading) {
@@ -193,7 +200,10 @@ const Blog = () => {
                   <div className="p-8">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1">
-                        <h2 className="text-2xl lg:text-3xl font-bold text-white mb-3 hover:text-brand-red transition-colors cursor-pointer">
+                        <h2 
+                          className="text-2xl lg:text-3xl font-bold text-white mb-3 hover:text-brand-red transition-colors cursor-pointer"
+                          onClick={() => handleReadMore(post.id)}
+                        >
                           {post.title}
                         </h2>
                         <p className="text-brand-green/80 text-lg leading-relaxed mb-4">
@@ -238,7 +248,10 @@ const Blog = () => {
                       ))}
                     </div>
 
-                    <button className="text-brand-red hover:text-brand-accent-red font-medium transition-colors">
+                    <button 
+                      onClick={() => handleReadMore(post.id)}
+                      className="text-brand-red hover:text-brand-accent-red font-medium transition-colors"
+                    >
                       Read More →
                     </button>
                   </div>

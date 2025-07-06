@@ -9,6 +9,7 @@ import { useUserRoles } from "@/hooks/useUserRoles";
 import Index from "./pages/Index";
 import About from "./pages/About";
 import Blog from "./pages/Blog";
+import BlogPost from "./pages/BlogPost";
 import Events from "./pages/Events";
 import Projects from "./pages/Projects";
 import Join from "./pages/Join";
@@ -61,6 +62,7 @@ const App = () => {
               <Route path="/" element={<Index />} />
               <Route path="/about" element={<About />} />
               <Route path="/blog" element={<Blog />} />
+              <Route path="/blog/:id" element={<BlogPost />} />
               <Route path="/events" element={<Events />} />
               <Route path="/projects" element={<Projects />} />
               <Route path="/join" element={<Join />} />

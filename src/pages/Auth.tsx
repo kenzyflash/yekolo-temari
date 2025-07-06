@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -23,15 +22,20 @@ const Auth = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Redirect authenticated users based on their role
+    console.log('Auth useEffect - user:', user, 'rolesLoading:', rolesLoading, 'isAdmin():', isAdmin());
+    
+    // Only redirect when both user is loaded and roles are loaded
     if (user && !rolesLoading) {
+      console.log('User authenticated, checking admin status:', isAdmin());
       if (isAdmin()) {
+        console.log('User is admin, redirecting to /admin');
         navigate('/admin');
       } else {
+        console.log('User is not admin, redirecting to /dashboard');
         navigate('/dashboard');
       }
     }
-  }, [user, isAdmin, rolesLoading, navigate]);
+  }, [user, rolesLoading, isAdmin, navigate]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,7 +62,7 @@ const Auth = () => {
           title: "Success",
           description: "Signed in successfully!"
         });
-        // Redirect will be handled by useEffect
+        // Redirect will be handled by useEffect after roles are loaded
       }
     } catch (error: any) {
       toast({

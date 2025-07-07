@@ -28,16 +28,20 @@ const Auth = () => {
     // Only redirect when both user is loaded and roles are loaded
     if (user && !rolesLoading) {
       console.log('User authenticated, checking admin status:', isAdmin());
-      // Add a small delay to ensure role data is fully processed
-      setTimeout(() => {
-        if (isAdmin()) {
+      // Wait for role data to be fully processed
+      const timer = setTimeout(() => {
+        const adminStatus = isAdmin();
+        console.log('Final admin check:', adminStatus);
+        if (adminStatus) {
           console.log('User is admin, redirecting to /admin');
-          navigate('/admin');
+          navigate('/admin', { replace: true });
         } else {
           console.log('User is not admin, redirecting to /dashboard');
-          navigate('/dashboard');
+          navigate('/dashboard', { replace: true });
         }
-      }, 100);
+      }, 200);
+      
+      return () => clearTimeout(timer);
     }
   }, [user, rolesLoading, isAdmin, navigate]);
 
@@ -101,24 +105,39 @@ const Auth = () => {
 
     setLoading(true);
     try {
-      const { error } = await signUp(email, password);
+      const { error, data } = await signUp(email, password);
       if (error) {
-        toast({
-          title: "Sign Up Failed",
-          description: error.message,
-          variant: "destructive"
-        });
+        // Handle specific error cases
+        if (error.message?.includes('User already registered')) {
+          toast({
+            title: "Account Already Exists",
+            description: "This email is already registered. Please sign in instead.",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Sign Up Failed",
+            description: error.message || "Failed to create account",
+            variant: "destructive"
+          });
+        }
       } else {
         toast({
           title: "Success",
-          description: "Account created successfully! Please check your email for verification."
+          description: data?.user?.email_confirmed_at 
+            ? "Account created successfully!" 
+            : "Account created! Please check your email for verification."
         });
-        // User will be redirected after email verification
+        
+        // Clear form
+        setEmail('');
+        setPassword('');
       }
     } catch (error: any) {
+      console.error('Signup error:', error);
       toast({
         title: "Error",
-        description: "An unexpected error occurred",
+        description: "An unexpected error occurred during registration",
         variant: "destructive"
       });
     } finally {

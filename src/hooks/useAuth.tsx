@@ -39,17 +39,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const signUp = async (email: string, password: string, userData?: any) => {
-    const redirectUrl = `${window.location.origin}/dashboard`;
-    
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: userData
-      }
-    });
-    return { error };
+    try {
+      // Clear any existing auth state before signup
+      await supabase.auth.signOut();
+      
+      const redirectUrl = `${window.location.origin}/auth-redirect`;
+      
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: userData
+        }
+      });
+      
+      if (error) throw error;
+      
+      return { error: null, data };
+    } catch (error: any) {
+      console.error('Signup error:', error);
+      return { error };
+    }
   };
 
   const signIn = async (email: string, password: string) => {

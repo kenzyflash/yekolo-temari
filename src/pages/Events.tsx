@@ -180,30 +180,30 @@ const Events = () => {
       <div className="relative z-10 pt-24 pb-16 px-4">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
-          <div className="text-center mb-12">
-            <h1 className="text-4xl lg:text-5xl font-bold text-white mb-6 glow-text">
+          <div className="text-center mb-8 sm:mb-12">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4 sm:mb-6 glow-text px-4">
               Upcoming <span className="text-brand-red">Events</span>
             </h1>
-            <p className="text-xl text-brand-green max-w-2xl mx-auto mb-8">
+            <p className="text-lg sm:text-xl text-brand-green max-w-2xl mx-auto mb-6 sm:mb-8 px-4">
               Join our cybersecurity events, workshops, and competitions to enhance your skills and network with fellow hackers.
             </p>
             
             <Button
               onClick={handleJoinTelegram}
-              className="bg-brand-red hover:bg-brand-accent-red text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 hover-glow"
+              className="bg-brand-red hover:bg-brand-accent-red text-white font-bold py-2 sm:py-3 px-4 sm:px-6 rounded-lg transition-all duration-300 hover-glow text-sm sm:text-base"
             >
-              <ExternalLink size={20} className="mr-2" />
+              <ExternalLink size={16} className="mr-2 sm:mr-2" />
               Join Telegram Community
             </Button>
           </div>
 
           {/* Filter Buttons */}
-          <div className="flex flex-wrap gap-4 mb-12 justify-center">
+          <div className="flex flex-wrap gap-2 sm:gap-4 mb-8 sm:mb-12 justify-center px-4">
             {eventTypes.map(type => (
               <button
                 key={type}
                 onClick={() => setFilter(type)}
-                className={`px-6 py-3 rounded-lg border transition-all ${
+                className={`px-3 sm:px-6 py-2 sm:py-3 rounded-lg border transition-all text-sm sm:text-base ${
                   filter === type
                     ? 'bg-brand-red text-white border-brand-red'
                     : 'bg-brand-darker text-brand-green border-brand-green/20 hover:border-brand-red hover:text-brand-red'
@@ -232,14 +232,14 @@ const Events = () => {
                         <div className="terminal-dot dot-green"></div>
                       </div>
                     </div>
-                    <div className="p-8">
+                    <div className="p-4 sm:p-6 lg:p-8">
                       <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between">
                         <div className="flex-1">
-                          <div className="flex items-center gap-4 mb-4">
-                            <h2 className="text-2xl lg:text-3xl font-bold text-white">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-4">
+                            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white">
                               {event.title}
                             </h2>
-                            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                            <span className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium self-start ${
                               event.status === 'upcoming' ? 'bg-blue-500/20 text-blue-400' :
                               event.status === 'completed' ? 'bg-green-500/20 text-green-400' :
                               'bg-red-500/20 text-red-400'
@@ -248,40 +248,41 @@ const Events = () => {
                             </span>
                           </div>
                           
-                          <p className="text-brand-green/80 text-lg leading-relaxed mb-6">
+                          <p className="text-brand-green/80 text-sm sm:text-base lg:text-lg leading-relaxed mb-4 sm:mb-6">
                             {event.description}
                           </p>
                           
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                            <div className="flex items-center space-x-3 text-brand-green/60">
-                              <Calendar size={20} />
-                              <span>{new Date(event.event_date).toLocaleDateString()}</span>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
+                            <div className="flex items-center space-x-2 sm:space-x-3 text-brand-green/60">
+                              <Calendar size={16} className="sm:w-5 sm:h-5" />
+                              <span className="text-sm sm:text-base">{new Date(event.event_date).toLocaleDateString()}</span>
                             </div>
-                            <div className="flex items-center space-x-3 text-brand-green/60">
-                              <Clock size={20} />
-                              <span>{event.event_time}</span>
+                            <div className="flex items-center space-x-2 sm:space-x-3 text-brand-green/60">
+                              <Clock size={16} className="sm:w-5 sm:h-5" />
+                              <span className="text-sm sm:text-base">{event.event_time}</span>
                             </div>
-                            <div className="flex items-center space-x-3 text-brand-green/60">
-                              <MapPin size={20} />
-                              <span>{event.location}</span>
+                            <div className="flex items-center space-x-2 sm:space-x-3 text-brand-green/60">
+                              <MapPin size={16} className="sm:w-5 sm:h-5" />
+                              <span className="text-sm sm:text-base">{event.location}</span>
                             </div>
-                            <div className="flex items-center space-x-3 text-brand-green/60">
-                              <Users size={20} />
-                              <span>{event.participants} participants</span>
+                            <div className="flex items-center space-x-2 sm:space-x-3 text-brand-green/60">
+                              <Users size={16} className="sm:w-5 sm:h-5" />
+                              <span className="text-sm sm:text-base">{event.participants} participants</span>
                             </div>
                           </div>
                           
-                          <div className="flex items-center gap-4">
-                            <span className="px-4 py-2 bg-brand-red/20 text-brand-red rounded-lg">
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
+                            <span className="px-3 sm:px-4 py-1 sm:py-2 bg-brand-red/20 text-brand-red rounded-lg text-sm sm:text-base">
                               {event.event_type}
                             </span>
                             {event.status === 'upcoming' && (
                               <Button
                                 onClick={() => handleEventRegistration(event.id, isRegistered)}
-                                className={isRegistered 
+                                className={`text-sm sm:text-base ${isRegistered 
                                   ? "bg-brand-green/20 text-brand-green hover:bg-red-600 hover:text-white" 
                                   : "bg-brand-green hover:bg-brand-green/80 text-brand-dark"
-                                }
+                                }`}
+                                size="sm"
                               >
                                 {isRegistered ? 'Unregister' : 'Register'}
                               </Button>

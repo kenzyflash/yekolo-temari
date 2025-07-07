@@ -85,15 +85,15 @@ const Index = () => {
                     className="h-32 lg:h-48 mx-auto mb-8 filter brightness-0 invert"
                   />
                   
-                  <h1 className="text-4xl lg:text-6xl font-bold text-white mb-6 glow-text">
+                  <h1 className="text-3xl sm:text-4xl lg:text-6xl font-bold text-white mb-4 sm:mb-6 glow-text px-4">
                     Welcome to <span className="text-brand-red">Yekolo Temari</span>
                   </h1>
                   
-                  <p className="text-xl lg:text-2xl text-brand-green mb-8 leading-relaxed">
+                  <p className="text-lg sm:text-xl lg:text-2xl text-brand-green mb-6 sm:mb-8 leading-relaxed px-4">
                     Ethiopia's Premier Ethical Hacking & Cybersecurity Community
                   </p>
                   
-                  <p className="text-lg text-gray-300 mb-12 max-w-2xl mx-auto">
+                  <p className="text-base sm:text-lg text-gray-300 mb-8 sm:mb-12 max-w-2xl mx-auto px-4">
                     Join our community of ethical hackers, security researchers, and cybersecurity enthusiasts. 
                     Learn, compete, and contribute to making the digital world safer.
                   </p>
@@ -110,22 +110,22 @@ const Index = () => {
             </div>
 
             {/* Quick Stats */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-              <div className="terminal-window p-6 text-center">
-                <div className="text-3xl font-bold text-brand-red mb-2">1500+</div>
-                <div className="text-brand-green">Members</div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-12 sm:mb-16 px-4">
+              <div className="terminal-window p-3 sm:p-6 text-center">
+                <div className="text-xl sm:text-3xl font-bold text-brand-red mb-1 sm:mb-2">1500+</div>
+                <div className="text-brand-green text-sm sm:text-base">Members</div>
               </div>
-              <div className="terminal-window p-6 text-center">
-                <div className="text-3xl font-bold text-brand-red mb-2">20+</div>
-                <div className="text-brand-green">CTF Events</div>
+              <div className="terminal-window p-3 sm:p-6 text-center">
+                <div className="text-xl sm:text-3xl font-bold text-brand-red mb-1 sm:mb-2">20+</div>
+                <div className="text-brand-green text-sm sm:text-base">CTF Events</div>
               </div>
-              <div className="terminal-window p-6 text-center">
-                <div className="text-3xl font-bold text-brand-red mb-2">10+</div>
-                <div className="text-brand-green">Workshops</div>
+              <div className="terminal-window p-3 sm:p-6 text-center">
+                <div className="text-xl sm:text-3xl font-bold text-brand-red mb-1 sm:mb-2">10+</div>
+                <div className="text-brand-green text-sm sm:text-base">Workshops</div>
               </div>
-              <div className="terminal-window p-6 text-center">
-                <div className="text-3xl font-bold text-brand-red mb-2">100%</div>
-                <div className="text-brand-green">Ethical</div>
+              <div className="terminal-window p-3 sm:p-6 text-center">
+                <div className="text-xl sm:text-3xl font-bold text-brand-red mb-1 sm:mb-2">100%</div>
+                <div className="text-brand-green text-sm sm:text-base">Ethical</div>
               </div>
             </div>
           </div>

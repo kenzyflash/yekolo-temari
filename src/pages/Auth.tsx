@@ -105,7 +105,7 @@ const Auth = () => {
 
     setLoading(true);
     try {
-      const { error, data } = await signUp(email, password);
+      const { error } = await signUp(email, password);
       if (error) {
         // Handle specific error cases
         if (error.message?.includes('User already registered')) {
@@ -124,9 +124,7 @@ const Auth = () => {
       } else {
         toast({
           title: "Success",
-          description: data?.user?.email_confirmed_at 
-            ? "Account created successfully!" 
-            : "Account created! Please check your email for verification."
+          description: "Account created! Please check your email for verification."
         });
         
         // Clear form

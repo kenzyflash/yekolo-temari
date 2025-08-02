@@ -52,7 +52,7 @@ const Events = () => {
       const eventsWithCounts = await Promise.all(
         (eventsData || []).map(async (event) => {
           const { data: participantData, error: participantError } = await supabase
-            .from('event_participants' as any)
+            .from('event_participants')
             .select('id', { count: 'exact' })
             .eq('event_id', event.id);
 
@@ -82,7 +82,7 @@ const Events = () => {
 
     try {
       const { data, error } = await supabase
-        .from('event_participants' as any)
+        .from('event_participants')
         .select('event_id')
         .eq('user_id', user.id);
 
@@ -109,7 +109,7 @@ const Events = () => {
       if (isRegistered) {
         // Unregister
         const { error } = await supabase
-          .from('event_participants' as any)
+          .from('event_participants')
           .delete()
           .eq('event_id', eventId)
           .eq('user_id', user.id);
@@ -129,7 +129,7 @@ const Events = () => {
       } else {
         // Register
         const { error } = await supabase
-          .from('event_participants' as any)
+          .from('event_participants')
           .insert([{
             event_id: eventId,
             user_id: user.id

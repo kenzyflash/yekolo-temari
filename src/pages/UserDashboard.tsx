@@ -8,8 +8,9 @@ import MatrixRain from '@/components/MatrixRain';
 import Footer from '@/components/Footer';
 import UserBlogManagement from '@/components/user/UserBlogManagement';
 import NotificationCenter from '@/components/user/NotificationCenter';
+import { ProfileManager } from '@/components/user/ProfileManager';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BookOpen, Bell, User } from 'lucide-react';
+import { BookOpen, Bell, User, Settings } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface DashboardStats {
@@ -186,7 +187,7 @@ const UserDashboard = () => {
 
           {/* Main Content Tabs */}
           <Tabs defaultValue="blogs" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 bg-brand-darker border border-brand-green/20">
+            <TabsList className="grid w-full grid-cols-3 bg-brand-darker border border-brand-green/20">
               <TabsTrigger value="blogs" className="flex items-center space-x-2 data-[state=active]:bg-brand-red">
                 <BookOpen size={18} />
                 <span>My Articles</span>
@@ -194,6 +195,10 @@ const UserDashboard = () => {
               <TabsTrigger value="notifications" className="flex items-center space-x-2 data-[state=active]:bg-brand-red">
                 <Bell size={18} />
                 <span>Notifications</span>
+              </TabsTrigger>
+              <TabsTrigger value="profile" className="flex items-center space-x-2 data-[state=active]:bg-brand-red">
+                <Settings size={18} />
+                <span>Profile</span>
               </TabsTrigger>
             </TabsList>
             
@@ -203,6 +208,10 @@ const UserDashboard = () => {
             
             <TabsContent value="notifications" className="mt-6">
               <NotificationCenter />
+            </TabsContent>
+            
+            <TabsContent value="profile" className="mt-6">
+              <ProfileManager />
             </TabsContent>
           </Tabs>
         </div>

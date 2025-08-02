@@ -6,7 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Edit, Trash2, Plus, X, Save } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Edit, Trash2, Plus, X, Save, Users } from 'lucide-react';
+import { EventParticipants } from './EventParticipants';
 
 interface Event {
   id: string;
@@ -311,6 +313,25 @@ const EventManagement = () => {
                 </div>
               </div>
               <div className="flex gap-2">
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-brand-green hover:text-brand-red"
+                    >
+                      <Users size={14} />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden bg-brand-darker border-brand-green/20">
+                    <DialogHeader>
+                      <DialogTitle className="text-white">Event Participants</DialogTitle>
+                    </DialogHeader>
+                    <div className="overflow-y-auto">
+                      <EventParticipants eventId={event.id} />
+                    </div>
+                  </DialogContent>
+                </Dialog>
                 <Button
                   onClick={() => editEvent(event)}
                   size="sm"

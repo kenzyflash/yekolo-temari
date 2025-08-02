@@ -16,6 +16,9 @@ import Footer from '@/components/Footer';
 const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const { user, signIn, signUp } = useAuth();
   const { isAdmin, loading: rolesLoading } = useUserRoles();
@@ -105,7 +108,12 @@ const Auth = () => {
 
     setLoading(true);
     try {
-      const { error } = await signUp(email, password);
+      const userData = {
+        first_name: firstName,
+        last_name: lastName,
+        phone: phone
+      };
+      const { error } = await signUp(email, password, userData);
       if (error) {
         // Handle specific error cases
         if (error.message?.includes('User already registered')) {
@@ -130,6 +138,9 @@ const Auth = () => {
         // Clear form
         setEmail('');
         setPassword('');
+        setFirstName('');
+        setLastName('');
+        setPhone('');
       }
     } catch (error: any) {
       console.error('Signup error:', error);
@@ -210,6 +221,24 @@ const Auth = () => {
                 
                 <TabsContent value="signup" className="space-y-4 mt-6">
                   <form onSubmit={handleSignUp} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <Input
+                        type="text"
+                        placeholder="First Name"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        className="bg-brand-dark border-brand-green/20 text-white"
+                        required
+                      />
+                      <Input
+                        type="text"
+                        placeholder="Last Name"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        className="bg-brand-dark border-brand-green/20 text-white"
+                        required
+                      />
+                    </div>
                     <div>
                       <Input
                         type="email"
@@ -218,6 +247,15 @@ const Auth = () => {
                         onChange={(e) => setEmail(e.target.value)}
                         className="bg-brand-dark border-brand-green/20 text-white"
                         required
+                      />
+                    </div>
+                    <div>
+                      <Input
+                        type="tel"
+                        placeholder="Phone Number (optional)"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        className="bg-brand-dark border-brand-green/20 text-white"
                       />
                     </div>
                     <div>

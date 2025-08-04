@@ -177,7 +177,7 @@ const EventManagement = () => {
 
       {showForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-brand-darker border border-brand-green/20 rounded-lg w-full max-w-2xl">
+          <div className="bg-brand-darker border border-brand-green/20 rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto scrollable-content">
             <div className="p-4 border-b border-brand-green/20">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-bold text-white">
@@ -187,7 +187,7 @@ const EventManagement = () => {
                   onClick={resetForm}
                   variant="ghost"
                   size="sm"
-                  className="text-brand-green hover:text-brand-red"
+                  className="text-brand-green hover:text-brand-red touch-target"
                 >
                   <X size={16} />
                 </Button>
@@ -216,14 +216,14 @@ const EventManagement = () => {
                 />
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-brand-green font-medium mb-2">Date *</label>
                   <Input
                     type="date"
                     value={formData.event_date}
                     onChange={(e) => setFormData({...formData, event_date: e.target.value})}
-                    className="bg-brand-dark border-brand-green/20 text-white"
+                    className="bg-brand-dark border-brand-green/20 text-white touch-target"
                     required
                   />
                 </div>
@@ -233,7 +233,7 @@ const EventManagement = () => {
                     value={formData.event_time}
                     onChange={(e) => setFormData({...formData, event_time: e.target.value})}
                     placeholder="e.g., 10:00 AM - 12:00 PM"
-                    className="bg-brand-dark border-brand-green/20 text-white"
+                    className="bg-brand-dark border-brand-green/20 text-white touch-target"
                     required
                   />
                 </div>
@@ -248,11 +248,11 @@ const EventManagement = () => {
                 />
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-brand-green font-medium mb-2">Type</label>
                   <Select value={formData.event_type} onValueChange={(value) => setFormData({...formData, event_type: value})}>
-                    <SelectTrigger className="bg-brand-dark border-brand-green/20 text-white">
+                    <SelectTrigger className="bg-brand-dark border-brand-green/20 text-white touch-target">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -266,7 +266,7 @@ const EventManagement = () => {
                 <div>
                   <label className="block text-brand-green font-medium mb-2">Status</label>
                   <Select value={formData.status} onValueChange={(value) => setFormData({...formData, status: value})}>
-                    <SelectTrigger className="bg-brand-dark border-brand-green/20 text-white">
+                    <SelectTrigger className="bg-brand-dark border-brand-green/20 text-white touch-target">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -278,12 +278,12 @@ const EventManagement = () => {
                 </div>
               </div>
               
-              <div className="flex gap-4 pt-4">
-                <Button type="submit" className="bg-brand-red hover:bg-brand-accent-red">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4">
+                <Button type="submit" className="bg-brand-red hover:bg-brand-accent-red touch-target">
                   <Save size={16} className="mr-2" />
                   {editingEvent ? 'Update Event' : 'Create Event'}
                 </Button>
-                <Button type="button" onClick={resetForm} variant="outline">
+                <Button type="button" onClick={resetForm} variant="outline" className="touch-target">
                   Cancel
                 </Button>
               </div>
@@ -295,15 +295,15 @@ const EventManagement = () => {
       <div className="space-y-4">
         {events.map((event) => (
           <div key={event.id} className="bg-brand-darker p-4 rounded-lg border border-brand-green/20">
-            <div className="flex justify-between items-start">
-              <div className="flex-1">
-                <h3 className="text-white font-medium text-lg">{event.title}</h3>
-                <p className="text-brand-green/80 text-sm mt-1">{event.description}</p>
-                <div className="flex items-center gap-4 mt-2 text-xs text-brand-green/60">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
+              <div className="flex-1 min-w-0">
+                <h3 className="text-white font-medium text-lg break-words">{event.title}</h3>
+                <p className="text-brand-green/80 text-sm mt-1 break-words">{event.description}</p>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-2 text-xs text-brand-green/60">
                   <span>{new Date(event.event_date).toLocaleDateString()}</span>
                   <span>{event.event_time}</span>
-                  <span>{event.location}</span>
-                  <span className={`px-2 py-1 rounded ${
+                  {event.location && <span className="break-words">{event.location}</span>}
+                  <span className={`px-2 py-1 rounded self-start ${
                     event.status === 'upcoming' ? 'bg-blue-500/20 text-blue-400' :
                     event.status === 'completed' ? 'bg-green-500/20 text-green-400' :
                     'bg-red-500/20 text-red-400'
@@ -312,22 +312,23 @@ const EventManagement = () => {
                   </span>
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 sm:flex-col lg:flex-row">
                 <Dialog>
                   <DialogTrigger asChild>
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="text-brand-green hover:text-brand-red"
+                      className="text-brand-green hover:text-brand-red touch-target"
                     >
                       <Users size={14} />
+                      <span className="ml-1 sm:hidden lg:inline">Participants</span>
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden bg-brand-darker border-brand-green/20">
+                  <DialogContent className="max-w-full sm:max-w-6xl max-h-[90vh] overflow-hidden bg-brand-darker border-brand-green/20 mx-4">
                     <DialogHeader>
                       <DialogTitle className="text-white">Event Participants</DialogTitle>
                     </DialogHeader>
-                    <div className="overflow-y-auto">
+                    <div className="overflow-y-auto scrollable-content">
                       <EventParticipants eventId={event.id} />
                     </div>
                   </DialogContent>
@@ -336,17 +337,19 @@ const EventManagement = () => {
                   onClick={() => editEvent(event)}
                   size="sm"
                   variant="ghost"
-                  className="text-brand-green hover:text-brand-red"
+                  className="text-brand-green hover:text-brand-red touch-target"
                 >
                   <Edit size={14} />
+                  <span className="ml-1 sm:hidden lg:inline">Edit</span>
                 </Button>
                 <Button
                   onClick={() => deleteEvent(event.id)}
                   size="sm"
                   variant="ghost"
-                  className="text-brand-green hover:text-brand-red"
+                  className="text-brand-green hover:text-brand-red touch-target"
                 >
                   <Trash2 size={14} />
+                  <span className="ml-1 sm:hidden lg:inline">Delete</span>
                 </Button>
               </div>
             </div>

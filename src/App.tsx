@@ -41,8 +41,8 @@ const AuthRedirect = () => {
 
   if (loading || rolesLoading) {
     return (
-      <div className="min-h-screen bg-brand-dark flex items-center justify-center">
-        <div className="text-brand-green text-xl">Redirecting...</div>
+      <div className="min-h-screen bg-brand-dark flex items-center justify-center responsive-padding">
+        <div className="text-brand-green text-lg sm:text-xl">Redirecting...</div>
       </div>
     );
   }

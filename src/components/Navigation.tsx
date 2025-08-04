@@ -51,83 +51,84 @@ const Navigation = () => {
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-brand-darker/95 backdrop-blur-sm border-b border-brand-green/20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+      <div className="max-w-7xl mx-auto responsive-padding">
+        <div className="flex justify-between items-center h-14 sm:h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-3 hover-glow p-2 rounded-lg transition-all duration-300">
+          <Link to="/" className="flex items-center space-x-2 sm:space-x-3 hover-glow p-1 sm:p-2 rounded-lg transition-all duration-300">
             <img 
               src="/lovable-uploads/b0a82a80-d078-4caf-92be-cca56b1efd1e.png" 
               alt="Yekolo Temari Logo" 
-              className="h-10 w-auto filter brightness-0 invert"
+              className="h-8 sm:h-10 w-auto filter brightness-0 invert"
             />
-            <span className="text-xl font-bold text-brand-green glow-text">
+            <span className="text-lg sm:text-xl font-bold text-brand-green glow-text hidden xs:block">
               Yekolo Temari
             </span>
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-1">
+          <div className="hidden lg:flex items-center space-x-1">
             {navItems.map((item) => {
               const Icon = item.icon;
               return (
                 <Link
                   key={item.name}
                   to={item.path}
-                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-300 ${
+                  className={`flex items-center space-x-2 px-3 xl:px-4 py-2 rounded-lg transition-all duration-300 text-sm xl:text-base touch-target ${
                     isActive(item.path)
                       ? 'bg-brand-red text-white shadow-lg'
                       : 'text-brand-green hover:bg-brand-red/20 hover:text-white'
                   }`}
                 >
                   <Icon size={18} />
-                  <span>{item.name}</span>
+                  <span className="hidden xl:block">{item.name}</span>
                 </Link>
               );
             })}
             
             {/* Auth buttons */}
             {user ? (
-              <div className="flex items-center space-x-2 ml-4">
+              <div className="flex items-center space-x-1 xl:space-x-2 ml-2 xl:ml-4">
                 <Link
                   to="/dashboard"
-                  className="text-brand-green hover:bg-brand-red/20 hover:text-white px-4 py-2 rounded-lg transition-all duration-300"
+                  className="text-brand-green hover:bg-brand-red/20 hover:text-white px-2 xl:px-4 py-2 rounded-lg transition-all duration-300 text-sm xl:text-base touch-target"
                 >
-                  Dashboard
+                  <span className="hidden xl:block">Dashboard</span>
+                  <span className="xl:hidden">Dash</span>
                 </Link>
                 <Button
                   onClick={handleLogout}
                   variant="ghost"
                   size="sm"
-                  className="text-brand-green hover:bg-brand-red hover:text-white"
+                  className="text-brand-green hover:bg-brand-red hover:text-white touch-target"
                 >
                   <LogOut size={18} />
-                  <span className="ml-1">Logout</span>
+                  <span className="ml-1 hidden xl:block">Logout</span>
                 </Button>
               </div>
             ) : (
               <Link
                 to="/auth"
-                className="text-brand-green hover:bg-brand-red/20 hover:text-white px-4 py-2 rounded-lg transition-all duration-300 ml-4"
+                className="text-brand-green hover:bg-brand-red/20 hover:text-white px-2 xl:px-4 py-2 rounded-lg transition-all duration-300 ml-2 xl:ml-4 text-sm xl:text-base touch-target"
               >
                 Login
               </Link>
             )}
           </div>
 
-          {/* Mobile menu button */}
-          <div className="md:hidden">
+          {/* Mobile/Tablet menu button */}
+          <div className="lg:hidden">
             <button
               onClick={() => setIsOpen(!isOpen)}
-              className="text-brand-green hover:text-white p-2 rounded-lg hover:bg-brand-red/20 transition-colors"
+              className="text-brand-green hover:text-white p-2 rounded-lg hover:bg-brand-red/20 transition-colors touch-target"
             >
               {isOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
           </div>
         </div>
 
-        {/* Mobile Navigation */}
+        {/* Mobile/Tablet Navigation */}
         {isOpen && (
-          <div className="md:hidden terminal-window mt-2 mb-4">
+          <div className="lg:hidden terminal-window mt-2 mb-4 max-h-[80vh] overflow-y-auto">
             <div className="terminal-header">
               <div className="terminal-dots">
                 <div className="terminal-dot dot-red"></div>
@@ -135,7 +136,7 @@ const Navigation = () => {
                 <div className="terminal-dot dot-green"></div>
               </div>
             </div>
-            <div className="p-4 space-y-2">
+            <div className="p-4 space-y-2 scrollable-content">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 return (

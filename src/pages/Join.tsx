@@ -37,8 +37,7 @@ const Join = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Form submitted:', formData);
-    // TODO: Submit to backend
+    // TODO: Submit to backend with proper validation
   };
 
   return (

@@ -28,22 +28,14 @@ const Admin = () => {
   });
 
   useEffect(() => {
-    console.log('Admin page - Auth loading:', authLoading, 'Roles loading:', rolesLoading);
-    console.log('User:', user);
-    console.log('Roles:', roles);
-    console.log('Is admin:', isAdmin());
-    
     if (!authLoading && !rolesLoading) {
       if (!user) {
-        console.log('No user found, redirecting to auth');
         navigate('/auth');
         return;
       }
       if (!isAdmin()) {
-        console.log('User is not admin, staying on admin page to show access denied');
         return;
       }
-      console.log('User is admin, fetching stats');
       fetchStats();
     }
   }, [user, authLoading, rolesLoading, isAdmin, navigate]);

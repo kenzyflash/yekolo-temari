@@ -40,7 +40,6 @@ const NotificationCenter = () => {
       if (error) throw error;
       setNotifications((data as unknown as Notification[]) || []);
     } catch (error: any) {
-      console.log('Notification fetch error:', error);
       // Set empty array if table doesn't exist yet
       setNotifications([]);
     } finally {

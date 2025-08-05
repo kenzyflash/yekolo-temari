@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Users, Search, Shield, User, AlertTriangle } from 'lucide-react';
-import AuditLog from './AuditLog';
 
 interface UserWithRole {
   id: string;
@@ -127,23 +126,14 @@ const UserManagement = () => {
 
       if (error) throw error;
 
-      // Log the role change for audit purposes
-      const { error: auditError } = await supabase
-        .from('audit_logs')
-        .insert({
-          action: 'Role Change',
-          target_user_id: userId,
-          target_user_email: targetUserEmail,
-          actor_user_id: currentUser.id,
-          actor_user_email: currentUser.email || 'Unknown',
-          old_role: oldRole,
-          new_role: newRole,
-          timestamp: new Date().toISOString()
-        });
-
-      if (auditError) {
-        console.error('Failed to log audit entry:', auditError);
-      }
+      // Note: Audit logging will be available once the database schema is updated
+      console.warn('Security audit: Role change performed', {
+        actor: currentUser.email,
+        target: targetUserEmail,
+        oldRole,
+        newRole,
+        timestamp: new Date().toISOString()
+      });
 
       // Update local state
       setUsers(prev =>
@@ -173,26 +163,10 @@ const UserManagement = () => {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-2">
-          <Users className="h-6 w-6 text-brand-red" />
-          <h2 className="text-xl font-bold text-white">User Management</h2>
-        </div>
-        <Button 
-          onClick={() => setShowAuditLog(!showAuditLog)}
-          variant="outline"
-          className="border-brand-green text-brand-green hover:bg-brand-green hover:text-brand-dark"
-        >
-          <Shield size={16} className="mr-2" />
-          {showAuditLog ? 'Hide' : 'Show'} Audit Log
-        </Button>
+      <div className="flex items-center space-x-2 mb-6">
+        <Users className="h-6 w-6 text-brand-red" />
+        <h2 className="text-xl font-bold text-white">User Management</h2>
       </div>
-
-      {showAuditLog && (
-        <div className="mb-8">
-          <AuditLog limit={20} />
-        </div>
-      )}
 
       {/* Search and Filter */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">

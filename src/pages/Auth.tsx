@@ -26,20 +26,14 @@ const Auth = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    console.log('Auth useEffect - user:', user, 'rolesLoading:', rolesLoading, 'isAdmin():', isAdmin());
-    
     // Only redirect when both user is loaded and roles are loaded
     if (user && !rolesLoading) {
-      console.log('User authenticated, checking admin status:', isAdmin());
       // Wait for role data to be fully processed
       const timer = setTimeout(() => {
         const adminStatus = isAdmin();
-        console.log('Final admin check:', adminStatus);
         if (adminStatus) {
-          console.log('User is admin, redirecting to /admin');
           navigate('/admin', { replace: true });
         } else {
-          console.log('User is not admin, redirecting to /dashboard');
           navigate('/dashboard', { replace: true });
         }
       }, 200);

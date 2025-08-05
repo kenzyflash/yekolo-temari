@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Bold, Italic, List, ListOrdered, Image, Save, X, Plus } from 'lucide-react';
 import ImageUpload from '@/components/ImageUpload';
+import { blogPostSchema, type BlogPostInput } from '@/lib/validation';
 
 interface RichTextEditorProps {
   blogId?: string;
@@ -150,10 +151,23 @@ const RichTextEditor = ({ blogId, onClose, onSave }: RichTextEditorProps) => {
   };
 
   const saveBlog = async (status: string = blogData.status) => {
-    if (!user || !blogData.title.trim() || !blogData.content.trim()) {
+    if (!user) {
       toast({
         title: "Error",
-        description: "Title and content are required",
+        description: "You must be logged in to save a blog post",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validate input data
+    try {
+      blogPostSchema.parse({ ...blogData, status });
+    } catch (error: any) {
+      const errorMessage = error.errors?.[0]?.message || 'Invalid input data';
+      toast({
+        title: "Validation Error",
+        description: errorMessage,
         variant: "destructive"
       });
       return;

@@ -1,11 +1,14 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Users, Search, Shield, User } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Users, Search, Shield, User, AlertTriangle } from 'lucide-react';
+import AuditLog from './AuditLog';
 
 interface UserWithRole {
   id: string;
@@ -16,12 +19,14 @@ interface UserWithRole {
 }
 
 const UserManagement = () => {
+  const { user: currentUser } = useAuth();
   const { toast } = useToast();
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<UserWithRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
+  const [showAuditLog, setShowAuditLog] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -85,8 +90,30 @@ const UserManagement = () => {
     setFilteredUsers(filtered);
   };
 
-  const updateUserRole = async (userId: string, newRole: 'admin' | 'user') => {
+  const updateUserRole = async (userId: string, newRole: 'admin' | 'user', targetUserEmail: string) => {
+    if (!currentUser) {
+      toast({
+        title: "Error",
+        description: "You must be authenticated to perform this action",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Prevent self-role modification
+    if (userId === currentUser.id) {
+      toast({
+        title: "Error",
+        description: "You cannot modify your own role",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
+      const targetUser = users.find(u => u.id === userId);
+      const oldRole = targetUser?.roles[0] || 'user';
+
       // Remove existing roles for this user
       await supabase
         .from('user_roles')
@@ -100,6 +127,24 @@ const UserManagement = () => {
 
       if (error) throw error;
 
+      // Log the role change for audit purposes
+      const { error: auditError } = await supabase
+        .from('audit_logs')
+        .insert({
+          action: 'Role Change',
+          target_user_id: userId,
+          target_user_email: targetUserEmail,
+          actor_user_id: currentUser.id,
+          actor_user_email: currentUser.email || 'Unknown',
+          old_role: oldRole,
+          new_role: newRole,
+          timestamp: new Date().toISOString()
+        });
+
+      if (auditError) {
+        console.error('Failed to log audit entry:', auditError);
+      }
+
       // Update local state
       setUsers(prev =>
         prev.map(user =>
@@ -111,7 +156,7 @@ const UserManagement = () => {
 
       toast({
         title: "Success",
-        description: `User role updated to ${newRole}`
+        description: `User role updated to ${newRole}. Action logged for security audit.`
       });
     } catch (error: any) {
       toast({
@@ -128,10 +173,26 @@ const UserManagement = () => {
 
   return (
     <div>
-      <div className="flex items-center space-x-2 mb-6">
-        <Users className="h-6 w-6 text-brand-red" />
-        <h2 className="text-xl font-bold text-white">User Management</h2>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center space-x-2">
+          <Users className="h-6 w-6 text-brand-red" />
+          <h2 className="text-xl font-bold text-white">User Management</h2>
+        </div>
+        <Button 
+          onClick={() => setShowAuditLog(!showAuditLog)}
+          variant="outline"
+          className="border-brand-green text-brand-green hover:bg-brand-green hover:text-brand-dark"
+        >
+          <Shield size={16} className="mr-2" />
+          {showAuditLog ? 'Hide' : 'Show'} Audit Log
+        </Button>
       </div>
+
+      {showAuditLog && (
+        <div className="mb-8">
+          <AuditLog limit={20} />
+        </div>
+      )}
 
       {/* Search and Filter */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -189,18 +250,46 @@ const UserManagement = () => {
                     </span>
                   </div>
                   
-                  <Select
-                    value={user.roles[0] || 'user'}
-                    onValueChange={(value: 'admin' | 'user') => updateUserRole(user.id, value)}
-                  >
-                    <SelectTrigger className="w-32 bg-brand-darker border-brand-green/20 text-white">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-brand-darker border-brand-green/20">
-                      <SelectItem value="user" className="text-white">User</SelectItem>
-                      <SelectItem value="admin" className="text-white">Admin</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="border-brand-green/20 text-brand-green hover:bg-brand-green hover:text-brand-dark"
+                        disabled={user.id === currentUser?.id}
+                      >
+                        <AlertTriangle size={12} className="mr-1" />
+                        Change Role
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent className="bg-brand-dark border border-brand-green/20">
+                      <AlertDialogHeader>
+                        <AlertDialogTitle className="text-white">Confirm Role Change</AlertDialogTitle>
+                        <AlertDialogDescription className="text-brand-green/60">
+                          You are about to change the role for {user.email}. This action will be logged for security audit purposes.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel className="border-brand-green/20 text-brand-green hover:bg-brand-green/10">
+                          Cancel
+                        </AlertDialogCancel>
+                        <div className="flex gap-2">
+                          <AlertDialogAction
+                            onClick={() => updateUserRole(user.id, 'user', user.email)}
+                            className="bg-brand-green hover:bg-brand-green/80 text-brand-dark"
+                          >
+                            Set as User
+                          </AlertDialogAction>
+                          <AlertDialogAction
+                            onClick={() => updateUserRole(user.id, 'admin', user.email)}
+                            className="bg-brand-red hover:bg-brand-red/80 text-white"
+                          >
+                            Set as Admin
+                          </AlertDialogAction>
+                        </div>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               </div>
             </div>

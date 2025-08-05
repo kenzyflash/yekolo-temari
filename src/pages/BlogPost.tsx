@@ -10,6 +10,8 @@ import Footer from '@/components/Footer';
 import BlogEditor from '@/components/BlogEditor';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import ReactMarkdown from 'react-markdown';
+import DOMPurify from 'dompurify';
 
 interface BlogPost {
   id: string;
@@ -87,19 +89,13 @@ const BlogPost = () => {
     fetchPost();
   };
 
-  // Function to convert markdown content to HTML with proper image rendering
-  const renderContent = (content: string) => {
-    // Convert markdown image syntax ![alt](url) to HTML img tags
-    const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
-    const htmlContent = content.replace(imageRegex, (match, alt, url) => {
-      return `<img src="${url}" alt="${alt}" class="max-w-full h-auto rounded-lg my-4 mx-auto block" />`;
+  // Secure content sanitization function
+  const sanitizeContent = (content: string) => {
+    return DOMPurify.sanitize(content, {
+      ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'img', 'a', 'code', 'pre'],
+      ALLOWED_ATTR: ['src', 'alt', 'href', 'class', 'target'],
+      ALLOW_DATA_ATTR: false
     });
-
-    // Convert other basic markdown
-    return htmlContent
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .replace(/\n/g, '<br />');
   };
 
   if (loading) {
@@ -200,11 +196,33 @@ const BlogPost = () => {
                 </div>
               )}
 
-              {/* Content with proper image rendering */}
-              <div 
-                className="prose prose-invert prose-lg max-w-none text-white"
-                dangerouslySetInnerHTML={{ __html: renderContent(post.content) }}
-              />
+              {/* Content with secure markdown rendering */}
+              <div className="prose prose-invert prose-lg max-w-none text-white">
+                <ReactMarkdown
+                  components={{
+                    img: ({ src, alt }) => (
+                      <img 
+                        src={src} 
+                        alt={alt} 
+                        className="max-w-full h-auto rounded-lg my-4 mx-auto block"
+                        loading="lazy"
+                      />
+                    ),
+                    a: ({ href, children }) => (
+                      <a 
+                        href={href} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-brand-green hover:text-brand-red transition-colors"
+                      >
+                        {children}
+                      </a>
+                    )
+                  }}
+                >
+                  {post.content}
+                </ReactMarkdown>
+              </div>
             </div>
           </article>
         </div>

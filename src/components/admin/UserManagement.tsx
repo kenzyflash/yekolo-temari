@@ -37,33 +37,38 @@ const UserManagement = () => {
 
   const fetchUsers = async () => {
     try {
-      // Get all users from user_roles table joined with profiles
-      const { data: userRoles, error: rolesError } = await supabase
-        .from('user_roles')
-        .select(`
-          user_id, 
-          role,
-          profiles!inner(
-            user_id,
-            first_name,
-            last_name,
-            created_at
-          )
-        `);
+      // Fetch user roles and profiles separately
+      const [rolesResponse, profilesResponse] = await Promise.all([
+        supabase.from('user_roles').select('user_id, role'),
+        supabase.from('profiles').select('user_id, first_name, last_name, created_at')
+      ]);
 
-      if (rolesError) throw rolesError;
+      if (rolesResponse.error) throw rolesResponse.error;
+      if (profilesResponse.error) throw profilesResponse.error;
 
-      // Group roles by user_id and create user objects with real profile data
+      const userRoles = rolesResponse.data || [];
+      const profiles = profilesResponse.data || [];
+
+      // Create a map of profiles by user_id for easy lookup
+      const profilesMap = new Map();
+      profiles.forEach(profile => {
+        profilesMap.set(profile.user_id, profile);
+      });
+
+      // Group roles by user_id and create user objects
       const usersMap = new Map<string, UserWithRole>();
       
-      userRoles.forEach(({ user_id, role, profiles }) => {
-        const profile = profiles as any;
+      userRoles.forEach(({ user_id, role }) => {
         if (!usersMap.has(user_id)) {
-          const fullName = [profile.first_name, profile.last_name].filter(Boolean).join(' ');
+          const profile = profilesMap.get(user_id);
+          const fullName = profile 
+            ? [profile.first_name, profile.last_name].filter(Boolean).join(' ')
+            : '';
+          
           usersMap.set(user_id, {
             id: user_id,
-            email: fullName || `user-${user_id.slice(0, 8)}`, // Use full name as display name
-            created_at: profile.created_at || new Date().toISOString(),
+            email: fullName || `User ${user_id.slice(0, 8)}`, // Use full name as display name
+            created_at: profile?.created_at || new Date().toISOString(),
             last_sign_in_at: new Date().toISOString(),
             roles: []
           });

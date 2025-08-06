@@ -4,14 +4,20 @@ import MatrixRain from '../components/MatrixRain';
 import { Github, Mail, User, Send, ExternalLink } from 'lucide-react';
 import { FaTelegramPlane, FaGithub, FaTwitter, FaYoutube, FaInstagram } from 'react-icons/fa';
 import { SocialIcon } from 'react-social-icons';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 const Join = () => {
+  const { toast } = useToast();
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     message: '',
     interests: [] as string[]
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const interests = [
     'Web Security',
@@ -35,9 +41,54 @@ const Join = () => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Submit to backend with proper validation
+    
+    if (!formData.name.trim() || !formData.email.trim()) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    
+    try {
+      const { error } = await supabase
+        .from('contact_messages')
+        .insert({
+          name: formData.name.trim(),
+          email: formData.email.trim(),
+          message: formData.message.trim() || null,
+          interests: formData.interests,
+          user_id: user?.id || null
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Message Sent!",
+        description: "Thank you for reaching out. We'll get back to you soon!",
+      });
+
+      // Reset form
+      setFormData({
+        name: '',
+        email: '',
+        message: '',
+        interests: []
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send message. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -303,10 +354,20 @@ const Join = () => {
 
                   <button
                     type="submit"
-                    className="w-full bg-brand-red hover:bg-brand-accent-red text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 hover-glow flex items-center justify-center space-x-2"
+                    disabled={isSubmitting}
+                    className="w-full bg-brand-red hover:bg-brand-accent-red text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 hover-glow flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Send className="h-5 w-5" />
-                    <span>Send Message</span>
+                    {isSubmitting ? (
+                      <>
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                        <span>Sending...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Send className="h-5 w-5" />
+                        <span>Send Message</span>
+                      </>
+                    )}
                   </button>
                 </form>
 

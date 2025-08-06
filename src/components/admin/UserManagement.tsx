@@ -37,31 +37,41 @@ const UserManagement = () => {
 
   const fetchUsers = async () => {
     try {
-      // Get all users from user_roles table
+      // Get all users from user_roles table joined with profiles
       const { data: userRoles, error: rolesError } = await supabase
         .from('user_roles')
-        .select('user_id, role');
+        .select(`
+          user_id, 
+          role,
+          profiles!inner(
+            user_id,
+            first_name,
+            last_name,
+            created_at
+          )
+        `);
 
       if (rolesError) throw rolesError;
 
-      // Group roles by user_id
-      const rolesByUser = userRoles.reduce((acc, { user_id, role }) => {
-        if (!acc[user_id]) acc[user_id] = [];
-        acc[user_id].push(role);
-        return acc;
-      }, {} as Record<string, string[]>);
+      // Group roles by user_id and create user objects with real profile data
+      const usersMap = new Map<string, UserWithRole>();
+      
+      userRoles.forEach(({ user_id, role, profiles }) => {
+        const profile = profiles as any;
+        if (!usersMap.has(user_id)) {
+          const fullName = [profile.first_name, profile.last_name].filter(Boolean).join(' ');
+          usersMap.set(user_id, {
+            id: user_id,
+            email: fullName || `user-${user_id.slice(0, 8)}`, // Use full name as display name
+            created_at: profile.created_at || new Date().toISOString(),
+            last_sign_in_at: new Date().toISOString(),
+            roles: []
+          });
+        }
+        usersMap.get(user_id)!.roles.push(role);
+      });
 
-      // For now, we'll create mock user data since we can't directly access auth.users
-      // In a real implementation, you'd need admin service role access
-      const mockUsers = Object.keys(rolesByUser).map(userId => ({
-        id: userId,
-        email: `user-${userId.slice(0, 8)}@example.com`,
-        created_at: new Date().toISOString(),
-        last_sign_in_at: new Date().toISOString(),
-        roles: rolesByUser[userId] || ['user']
-      }));
-
-      setUsers(mockUsers);
+      setUsers(Array.from(usersMap.values()));
     } catch (error: any) {
       toast({
         title: "Error",

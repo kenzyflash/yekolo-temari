@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Edit, Trash2, Eye, Plus, Check, X } from 'lucide-react';
 import BlogEditor from '@/components/BlogEditor';
+import BlogPreview from '@/components/BlogPreview';
 
 interface Blog {
   id: string;
@@ -25,6 +26,8 @@ const BlogManagement = () => {
   const [showEditor, setShowEditor] = useState(false);
   const [editingBlog, setEditingBlog] = useState<string | undefined>();
   const [statusFilter, setStatusFilter] = useState('all');
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewBlogId, setPreviewBlogId] = useState<string>('');
 
   useEffect(() => {
     fetchBlogs();
@@ -182,6 +185,18 @@ const BlogManagement = () => {
                 )}
                 <Button
                   onClick={() => {
+                    setPreviewBlogId(blog.id);
+                    setShowPreview(true);
+                  }}
+                  size="sm"
+                  variant="ghost"
+                  className="text-brand-green hover:text-brand-red"
+                  title="Preview Blog"
+                >
+                  <Eye size={14} />
+                </Button>
+                <Button
+                  onClick={() => {
                     setEditingBlog(blog.id);
                     setShowEditor(true);
                   }}
@@ -217,6 +232,15 @@ const BlogManagement = () => {
           }}
         />
       )}
+
+      <BlogPreview
+        blogId={previewBlogId}
+        isOpen={showPreview}
+        onClose={() => {
+          setShowPreview(false);
+          setPreviewBlogId('');
+        }}
+      />
     </div>
   );
 };

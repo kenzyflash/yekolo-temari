@@ -229,14 +229,27 @@ const Join = () => {
                     </a>
 
                     {/* Email */}
-                    <div className="flex items-center space-x-4 p-4 bg-brand-darker rounded-lg border border-brand-green/30">
+                    <a
+                      href="mailto:contact@yekolotemari.com"
+                      className="flex items-center space-x-4 p-4 bg-brand-darker rounded-lg hover:bg-brand-red/20 hover:border-brand-red border border-brand-green/30 transition-all duration-300 hover-glow cursor-pointer"
+                      onClick={(e) => {
+                        // Copy to clipboard as backup
+                        navigator.clipboard.writeText('contact@yekolotemari.com').then(() => {
+                          toast({
+                            title: "Email Copied!",
+                            description: "Email address copied to clipboard"
+                          });
+                        });
+                      }}
+                    >
                       <Mail className="h-8 w-8 text-brand-red" />
                       <div>
                         <h3 className="text-white font-bold">Email Contact</h3>
                         <p className="text-brand-green text-sm">contact@yekolotemari.com</p>
                         <p className="text-brand-green/60 text-xs">For partnership and collaboration inquiries</p>
                       </div>
-                    </div>
+                      <ExternalLink className="h-5 w-5 text-brand-green/60 ml-auto" />
+                    </a>
                   </div>
                 </div>
               </div>

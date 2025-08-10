@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, Terminal, Shield, Code, Calendar, Users, Github, MessageCircle, LogOut } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserRoles } from '@/hooks/useUserRoles';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 
@@ -11,6 +12,7 @@ const Navigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const { isAdmin } = useUserRoles();
   const { toast } = useToast();
 
   const navItems = [
@@ -89,7 +91,7 @@ const Navigation = () => {
             {user ? (
               <div className="flex items-center space-x-1 xl:space-x-2 ml-2 xl:ml-4">
                 <Link
-                  to="/dashboard"
+                  to={isAdmin() ? "/admin" : "/dashboard"}
                   className="text-brand-green hover:bg-brand-red/20 hover:text-white px-2 xl:px-4 py-2 rounded-lg transition-all duration-300 text-sm xl:text-base touch-target"
                 >
                   <span className="hidden xl:block">Dashboard</span>
@@ -160,7 +162,7 @@ const Navigation = () => {
               {user ? (
                 <>
                   <Link
-                    to="/dashboard"
+                    to={isAdmin() ? "/admin" : "/dashboard"}
                     onClick={() => setIsOpen(false)}
                     className="flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-300 text-brand-green hover:bg-brand-red/20 hover:text-white"
                   >

@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import Navigation from '@/components/Navigation';
 import MatrixRain from '@/components/MatrixRain';
 import Footer from '@/components/Footer';
+import PasswordReset from '@/components/PasswordReset';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
@@ -20,6 +21,7 @@ const Auth = () => {
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPasswordReset, setShowPasswordReset] = useState(false);
   const { user, signIn, signUp } = useAuth();
   const { isAdmin, loading: rolesLoading } = useUserRoles();
   const navigate = useNavigate();
@@ -171,47 +173,59 @@ const Auth = () => {
             </CardHeader>
             
             <CardContent>
-              <Tabs defaultValue="signin" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 bg-brand-dark">
-                  <TabsTrigger value="signin" className="data-[state=active]:bg-brand-red">
-                    Sign In
-                  </TabsTrigger>
-                  <TabsTrigger value="signup" className="data-[state=active]:bg-brand-red">
-                    Sign Up
-                  </TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="signin" className="space-y-4 mt-6">
-                  <form onSubmit={handleSignIn} className="space-y-4">
-                    <div>
-                      <Input
-                        type="email"
-                        placeholder="Email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="bg-brand-dark border-brand-green/20 text-white"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Input
-                        type="password"
-                        placeholder="Password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="bg-brand-dark border-brand-green/20 text-white"
-                        required
-                      />
-                    </div>
-                    <Button
-                      type="submit"
-                      className="w-full bg-brand-red hover:bg-brand-accent-red"
-                      disabled={loading}
-                    >
-                      {loading ? 'Signing In...' : 'Sign In'}
-                    </Button>
-                  </form>
-                </TabsContent>
+              {showPasswordReset ? (
+                <PasswordReset onBack={() => setShowPasswordReset(false)} />
+              ) : (
+                <Tabs defaultValue="signin" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2 bg-brand-dark">
+                    <TabsTrigger value="signin" className="data-[state=active]:bg-brand-red">
+                      Sign In
+                    </TabsTrigger>
+                    <TabsTrigger value="signup" className="data-[state=active]:bg-brand-red">
+                      Sign Up
+                    </TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="signin" className="space-y-4 mt-6">
+                    <form onSubmit={handleSignIn} className="space-y-4">
+                      <div>
+                        <Input
+                          type="email"
+                          placeholder="Email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          className="bg-brand-dark border-brand-green/20 text-white"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Input
+                          type="password"
+                          placeholder="Password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          className="bg-brand-dark border-brand-green/20 text-white"
+                          required
+                        />
+                      </div>
+                      <Button
+                        type="submit"
+                        className="w-full bg-brand-red hover:bg-brand-accent-red"
+                        disabled={loading}
+                      >
+                        {loading ? 'Signing In...' : 'Sign In'}
+                      </Button>
+                      <div className="text-center">
+                        <button
+                          type="button"
+                          onClick={() => setShowPasswordReset(true)}
+                          className="text-brand-green hover:text-brand-red text-sm transition-colors"
+                        >
+                          Forgot your password?
+                        </button>
+                      </div>
+                    </form>
+                  </TabsContent>
                 
                 <TabsContent value="signup" className="space-y-4 mt-6">
                   <form onSubmit={handleSignUp} className="space-y-4">
@@ -271,7 +285,8 @@ const Auth = () => {
                     </Button>
                   </form>
                 </TabsContent>
-              </Tabs>
+                </Tabs>
+              )}
             </CardContent>
           </Card>
         </div>

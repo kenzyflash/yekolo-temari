@@ -12,6 +12,7 @@ import { Users, Search, Shield, User, AlertTriangle } from 'lucide-react';
 interface UserWithRole {
   id: string;
   email: string;
+  displayName?: string;
   created_at: string;
   last_sign_in_at: string;
   roles: string[];
@@ -37,6 +38,11 @@ const UserManagement = () => {
 
   const fetchUsers = async () => {
     try {
+      // Fetch users from auth.users (admin query) to get email addresses
+      const { data: authUsersData, error: authError } = await supabase.auth.admin.listUsers();
+      
+      if (authError) throw authError;
+
       // Fetch user roles and profiles separately
       const [rolesResponse, profilesResponse] = await Promise.all([
         supabase.from('user_roles').select('user_id, role'),
@@ -48,11 +54,17 @@ const UserManagement = () => {
 
       const userRoles = rolesResponse.data || [];
       const profiles = profilesResponse.data || [];
+      const authUsers = authUsersData?.users || [];
 
-      // Create a map of profiles by user_id for easy lookup
+      // Create maps for efficient lookup
       const profilesMap = new Map();
       profiles.forEach(profile => {
         profilesMap.set(profile.user_id, profile);
+      });
+
+      const authUsersMap = new Map();
+      authUsers.forEach(user => {
+        authUsersMap.set(user.id, user);
       });
 
       // Group roles by user_id and create user objects
@@ -61,15 +73,17 @@ const UserManagement = () => {
       userRoles.forEach(({ user_id, role }) => {
         if (!usersMap.has(user_id)) {
           const profile = profilesMap.get(user_id);
+          const authUser = authUsersMap.get(user_id);
           const fullName = profile 
             ? [profile.first_name, profile.last_name].filter(Boolean).join(' ')
             : '';
           
           usersMap.set(user_id, {
             id: user_id,
-            email: fullName || `User ${user_id.slice(0, 8)}`, // Use full name as display name
-            created_at: profile?.created_at || new Date().toISOString(),
-            last_sign_in_at: new Date().toISOString(),
+            email: authUser?.email || `user-${user_id.slice(0, 8)}@unknown.com`, // Use actual email
+            displayName: fullName || authUser?.email || `User ${user_id.slice(0, 8)}`, // Add display name field
+            created_at: profile?.created_at || authUser?.created_at || new Date().toISOString(),
+            last_sign_in_at: authUser?.last_sign_in_at || new Date().toISOString(),
             roles: []
           });
         }
@@ -78,9 +92,10 @@ const UserManagement = () => {
 
       setUsers(Array.from(usersMap.values()));
     } catch (error: any) {
+      console.error('Error fetching users:', error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to fetch users. Make sure you have admin privileges.",
         variant: "destructive"
       });
     } finally {
@@ -224,8 +239,9 @@ const UserManagement = () => {
                     <User className="h-5 w-5 text-brand-red" />
                   </div>
                   <div>
-                    <h3 className="text-white font-medium">{user.email}</h3>
-                    <p className="text-brand-green/60 text-sm">
+                    <h3 className="text-white font-medium">{user.displayName || user.email}</h3>
+                    <p className="text-brand-green/60 text-sm">{user.email}</p>
+                    <p className="text-brand-green/40 text-xs">
                       Created: {new Date(user.created_at).toLocaleDateString()}
                     </p>
                   </div>

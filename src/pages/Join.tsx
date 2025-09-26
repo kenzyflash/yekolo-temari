@@ -7,6 +7,7 @@ import { SocialIcon } from 'react-social-icons';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { contactSchema, type ContactFormData } from '@/lib/validation-schemas';
 
 const Join = () => {
   const { toast } = useToast();
@@ -44,25 +45,18 @@ const Join = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name.trim() || !formData.email.trim()) {
-      toast({
-        title: "Error",
-        description: "Please fill in all required fields",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
-    
+    // Validate form data using zod schema
     try {
+      const validatedData = contactSchema.parse(formData);
+      setIsSubmitting(true);
+      
       const { error } = await supabase
         .from('contact_messages')
         .insert({
-          name: formData.name.trim(),
-          email: formData.email.trim(),
-          message: formData.message.trim() || null,
-          interests: formData.interests,
+          name: validatedData.name,
+          email: validatedData.email,
+          message: validatedData.message || null,
+          interests: validatedData.interests || [],
           user_id: user?.id || null
         });
 
@@ -81,11 +75,21 @@ const Join = () => {
         interests: []
       });
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to send message. Please try again.",
-        variant: "destructive"
-      });
+      if (error.name === 'ZodError') {
+        // Handle validation errors
+        const firstError = error.errors[0];
+        toast({
+          title: "Validation Error",
+          description: firstError.message,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to send message. Please try again.",
+          variant: "destructive"
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }

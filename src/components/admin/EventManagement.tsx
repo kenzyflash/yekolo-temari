@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Edit, Trash2, Plus, X, Save, Users } from 'lucide-react';
 import { EventParticipants } from './EventParticipants';
+import { eventSchema, type EventFormData } from '@/lib/validation-schemas';
 
 interface Event {
   id: string;
@@ -68,20 +69,23 @@ const EventManagement = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.title || !formData.description || !formData.event_date || !formData.event_time) {
-      toast({
-        title: "Error",
-        description: "Please fill in all required fields",
-        variant: "destructive"
-      });
-      return;
-    }
-
     try {
+      // Validate form data using zod schema
+      const validatedData = eventSchema.parse(formData);
+      
       if (editingEvent) {
         const { error } = await supabase
           .from('events')
-          .update({ ...formData, updated_at: new Date().toISOString() })
+          .update({
+            title: validatedData.title,
+            description: validatedData.description,
+            event_date: validatedData.event_date,
+            event_time: validatedData.event_time,
+            location: validatedData.location || '',
+            event_type: validatedData.event_type,
+            status: validatedData.status,
+            updated_at: new Date().toISOString()
+          })
           .eq('id', editingEvent.id);
 
         if (error) throw error;
@@ -89,7 +93,16 @@ const EventManagement = () => {
       } else {
         const { error } = await supabase
           .from('events')
-          .insert([formData]);
+          .insert([{
+            title: validatedData.title,
+            description: validatedData.description,
+            event_date: validatedData.event_date,
+            event_time: validatedData.event_time,
+            location: validatedData.location || '',
+            event_type: validatedData.event_type,
+            status: validatedData.status,
+            participants: 0
+          }]);
 
         if (error) throw error;
         toast({ title: "Event created successfully" });
@@ -98,11 +111,21 @@ const EventManagement = () => {
       resetForm();
       fetchEvents();
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive"
-      });
+      if (error.name === 'ZodError') {
+        // Handle validation errors
+        const firstError = error.errors[0];
+        toast({
+          title: "Validation Error",
+          description: firstError.message,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive"
+        });
+      }
     }
   };
 
@@ -303,11 +326,11 @@ const EventManagement = () => {
                   <span>{new Date(event.event_date).toLocaleDateString()}</span>
                   <span>{event.event_time}</span>
                   {event.location && <span className="break-words">{event.location}</span>}
-                  <span className={`px-2 py-1 rounded self-start ${
-                    event.status === 'upcoming' ? 'bg-blue-500/20 text-blue-400' :
-                    event.status === 'completed' ? 'bg-green-500/20 text-green-400' :
-                    'bg-red-500/20 text-red-400'
-                  }`}>
+                    <span className={`px-2 py-1 rounded self-start ${
+                      event.status === 'upcoming' ? 'bg-primary/20 text-primary' :
+                      event.status === 'completed' ? 'bg-secondary/20 text-secondary' :
+                      'bg-destructive/20 text-destructive'
+                    }`}>
                     {event.status}
                   </span>
                 </div>

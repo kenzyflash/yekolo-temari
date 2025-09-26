@@ -102,10 +102,10 @@ const ContactMessageManagement = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'new': return 'bg-blue-500';
-      case 'read': return 'bg-yellow-500';
-      case 'responded': return 'bg-green-500';
-      default: return 'bg-gray-500';
+      case 'new': return 'bg-primary text-primary-foreground';
+      case 'read': return 'bg-accent text-accent-foreground';
+      case 'responded': return 'bg-secondary text-secondary-foreground';
+      default: return 'bg-muted text-muted-foreground';
     }
   };
 

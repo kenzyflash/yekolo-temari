@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { blogSchema } from '@/lib/validation-schemas';
+import DOMPurify from 'dompurify';
 import { Button } from '@/components/ui/button';
 import { Edit, Trash2, Eye, Plus, Check, X } from 'lucide-react';
 import BlogEditor from '@/components/BlogEditor';
@@ -56,9 +57,57 @@ const BlogManagement = () => {
 
   const updateBlogStatus = async (blogId: string, status: string) => {
     try {
+      // Validate status change
+      if (!['draft', 'pending', 'published', 'rejected'].includes(status)) {
+        toast({
+          title: "Error",
+          description: "Invalid blog status",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Get blog data to validate before publishing
+      if (status === 'published') {
+        const { data: blog, error: fetchError } = await supabase
+          .from('blogs')
+          .select('title, content, category')
+          .eq('id', blogId)
+          .single();
+
+        if (fetchError) throw fetchError;
+
+        // Validate required fields
+        if (!blog.title || !blog.content || !blog.category) {
+          toast({
+            title: "Validation Error",
+            description: "Blog must have title, content, and category before publishing",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        // Sanitize content before publishing
+        const sanitizedContent = DOMPurify.sanitize(blog.content, {
+          ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'h1', 'h2', 'h3', 'ul', 'ol', 'li', 'a', 'img', 'code', 'pre'],
+          ALLOWED_ATTR: ['href', 'src', 'alt', 'class']
+        });
+
+        const { error: updateContentError } = await supabase
+          .from('blogs')
+          .update({ content: sanitizedContent })
+          .eq('id', blogId);
+
+        if (updateContentError) throw updateContentError;
+      }
+
       const { error } = await supabase
         .from('blogs')
-        .update({ status, updated_at: new Date().toISOString() })
+        .update({ 
+          status, 
+          updated_at: new Date().toISOString(),
+          published: status === 'published'
+        })
         .eq('id', blogId);
 
       if (error) throw error;
@@ -78,7 +127,8 @@ const BlogManagement = () => {
   };
 
   const deleteBlog = async (blogId: string) => {
-    if (!confirm('Are you sure you want to delete this blog?')) return;
+    const confirmed = confirm('Are you sure you want to delete this blog? This action cannot be undone.');
+    if (!confirmed) return;
     
     try {
       const { error } = await supabase
@@ -96,7 +146,7 @@ const BlogManagement = () => {
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to delete blog",
         variant: "destructive"
       });
     }
@@ -117,7 +167,11 @@ const BlogManagement = () => {
   };
 
   if (loading) {
-    return <div className="text-brand-green">Loading blogs...</div>;
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-brand-green text-lg">Loading blogs...</div>
+      </div>
+    );
   }
 
   return (

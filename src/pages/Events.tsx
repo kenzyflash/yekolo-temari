@@ -8,6 +8,8 @@ import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { registerForEvent, unregisterFromEvent, checkEventRegistration } from '@/lib/eventHelpers';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 interface Event {
   id: string;
@@ -28,8 +30,10 @@ const Events = () => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('All');
   const [registeredEvents, setRegisteredEvents] = useState<Set<string>>(new Set());
+  const [processingRegistration, setProcessingRegistration] = useState<string | null>(null);
 
   const eventTypes = ['All', 'CTF', 'Workshop', 'Conference', 'Meetup'];
+  const MAX_EVENT_CAPACITY = 100; // Define maximum capacity per event
 
   useEffect(() => {
     fetchEvents();
@@ -105,16 +109,21 @@ const Events = () => {
       return;
     }
 
+    setProcessingRegistration(eventId);
+
     try {
       if (isRegistered) {
-        // Unregister
-        const { error } = await supabase
-          .from('event_participants')
-          .delete()
-          .eq('event_id', eventId)
-          .eq('user_id', user.id);
-
-        if (error) throw error;
+        // Unregister using helper function
+        const result = await unregisterFromEvent(eventId, user.id);
+        
+        if (!result.success) {
+          toast({
+            title: "Error",
+            description: result.error || "Failed to unregister from event",
+            variant: "destructive"
+          });
+          return;
+        }
         
         setRegisteredEvents(prev => {
           const newSet = new Set(prev);
@@ -124,35 +133,40 @@ const Events = () => {
         
         toast({
           title: "Success",
-          description: "Unregistered from event"
+          description: result.message || "Unregistered from event"
         });
       } else {
-        // Register
-        const { error } = await supabase
-          .from('event_participants')
-          .insert([{
-            event_id: eventId,
-            user_id: user.id
-          }]);
-
-        if (error) throw error;
+        // Register using helper function with capacity check
+        const result = await registerForEvent(eventId, user.id, MAX_EVENT_CAPACITY);
+        
+        if (!result.success) {
+          toast({
+            title: "Registration Failed",
+            description: result.error || "Failed to register for event",
+            variant: "destructive"
+          });
+          return;
+        }
         
         setRegisteredEvents(prev => new Set([...prev, eventId]));
         
         toast({
           title: "Success",
-          description: "Registered for event successfully!"
+          description: result.message || "Registered for event successfully!"
         });
       }
       
       // Refresh events to update participant count
       fetchEvents();
     } catch (error: any) {
+      console.error('Event registration error:', error);
       toast({
         title: "Error",
-        description: error.message,
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive"
       });
+    } finally {
+      setProcessingRegistration(null);
     }
   };
 
@@ -165,11 +179,7 @@ const Events = () => {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-brand-dark flex items-center justify-center">
-        <div className="text-brand-green text-xl">Loading...</div>
-      </div>
-    );
+    return <LoadingSpinner fullScreen text="Loading events..." />;
   }
 
   return (
@@ -278,13 +288,14 @@ const Events = () => {
                             {event.status === 'upcoming' && (
                               <Button
                                 onClick={() => handleEventRegistration(event.id, isRegistered)}
+                                disabled={processingRegistration === event.id || event.participants >= MAX_EVENT_CAPACITY}
                                 className={`text-sm sm:text-base ${isRegistered 
                                   ? "bg-brand-green/20 text-brand-green hover:bg-red-600 hover:text-white" 
                                   : "bg-brand-green hover:bg-brand-green/80 text-brand-dark"
                                 }`}
                                 size="sm"
                               >
-                                {isRegistered ? 'Unregister' : 'Register'}
+                                {processingRegistration === event.id ? 'Processing...' : isRegistered ? 'Unregister' : event.participants >= MAX_EVENT_CAPACITY ? 'Full' : 'Register'}
                               </Button>
                             )}
                           </div>

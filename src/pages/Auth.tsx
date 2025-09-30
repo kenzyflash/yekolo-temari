@@ -3,34 +3,35 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRoles } from '@/hooks/useUserRoles';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
+import { authSchema, type AuthFormData } from '@/lib/validation-schemas';
 import Navigation from '@/components/Navigation';
 import MatrixRain from '@/components/MatrixRain';
 import Footer from '@/components/Footer';
 import PasswordReset from '@/components/PasswordReset';
 
 const Auth = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [phone, setPhone] = useState('');
+  const [formData, setFormData] = useState<AuthFormData>({
+    email: '',
+    password: '',
+    confirmPassword: '',
+    firstName: '',
+    lastName: ''
+  });
   const [loading, setLoading] = useState(false);
   const [showPasswordReset, setShowPasswordReset] = useState(false);
+  const [errors, setErrors] = useState<Partial<Record<keyof AuthFormData, string>>>({});
   const { user, signIn, signUp } = useAuth();
   const { isAdmin, loading: rolesLoading } = useUserRoles();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    // Only redirect when both user is loaded and roles are loaded
     if (user && !rolesLoading) {
-      // Wait for role data to be fully processed
       const timer = setTimeout(() => {
         const adminStatus = isAdmin();
         if (adminStatus) {
@@ -44,12 +45,57 @@ const Auth = () => {
     }
   }, [user, rolesLoading, isAdmin, navigate]);
 
+  const validateSignIn = () => {
+    try {
+      // Manual validation for sign in (just email and password)
+      const errors: Partial<Record<keyof AuthFormData, string>> = {};
+      
+      if (!formData.email || !formData.email.trim()) {
+        errors.email = "Email is required";
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+        errors.email = "Invalid email address";
+      }
+      
+      if (!formData.password) {
+        errors.password = "Password is required";
+      } else if (formData.password.length < 8) {
+        errors.password = "Password must be at least 8 characters";
+      }
+      
+      if (Object.keys(errors).length > 0) {
+        setErrors(errors);
+        return false;
+      }
+      
+      setErrors({});
+      return true;
+    } catch (error: any) {
+      return false;
+    }
+  };
+
+  const validateSignUp = () => {
+    try {
+      authSchema.parse(formData);
+      setErrors({});
+      return true;
+    } catch (error: any) {
+      const fieldErrors: Partial<Record<keyof AuthFormData, string>> = {};
+      error.errors.forEach((err: any) => {
+        fieldErrors[err.path[0] as keyof AuthFormData] = err.message;
+      });
+      setErrors(fieldErrors);
+      return false;
+    }
+  };
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
+    
+    if (!validateSignIn()) {
       toast({
-        title: "Error",
-        description: "Please fill in all fields",
+        title: "Validation Error",
+        description: "Please fix the errors in the form",
         variant: "destructive"
       });
       return;
@@ -57,7 +103,7 @@ const Auth = () => {
 
     setLoading(true);
     try {
-      const { error } = await signIn(email, password);
+      const { error } = await signIn(formData.email, formData.password);
       if (error) {
         toast({
           title: "Sign In Failed",
@@ -69,7 +115,6 @@ const Auth = () => {
           title: "Success",
           description: "Signed in successfully!"
         });
-        // Redirect will be handled by useEffect after roles are loaded
       }
     } catch (error: any) {
       toast({
@@ -84,19 +129,11 @@ const Auth = () => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
+    
+    if (!validateSignUp()) {
       toast({
-        title: "Error",
-        description: "Please fill in all fields",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (password.length < 6) {
-      toast({
-        title: "Error",
-        description: "Password must be at least 6 characters long",
+        title: "Validation Error",
+        description: "Please fix the errors in the form",
         variant: "destructive"
       });
       return;
@@ -105,13 +142,11 @@ const Auth = () => {
     setLoading(true);
     try {
       const userData = {
-        first_name: firstName,
-        last_name: lastName,
-        phone: phone
+        first_name: formData.firstName,
+        last_name: formData.lastName
       };
-      const { error } = await signUp(email, password, userData);
+      const { error } = await signUp(formData.email, formData.password, userData);
       if (error) {
-        // Handle specific error cases
         if (error.message?.includes('User already registered')) {
           toast({
             title: "Account Already Exists",
@@ -131,15 +166,15 @@ const Auth = () => {
           description: "Account created! Please check your email for verification."
         });
         
-        // Clear form
-        setEmail('');
-        setPassword('');
-        setFirstName('');
-        setLastName('');
-        setPhone('');
+        setFormData({
+          email: '',
+          password: '',
+          confirmPassword: '',
+          firstName: '',
+          lastName: ''
+        });
       }
     } catch (error: any) {
-      console.error('Signup error:', error);
       toast({
         title: "Error",
         description: "An unexpected error occurred during registration",
@@ -192,21 +227,27 @@ const Auth = () => {
                         <Input
                           type="email"
                           placeholder="Email"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
+                          value={formData.email}
+                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                           className="bg-brand-dark border-brand-green/20 text-white"
                           required
                         />
+                        {errors.email && (
+                          <p className="text-destructive text-sm mt-1">{errors.email}</p>
+                        )}
                       </div>
                       <div>
                         <Input
                           type="password"
                           placeholder="Password"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
+                          value={formData.password}
+                          onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                           className="bg-brand-dark border-brand-green/20 text-white"
                           required
                         />
+                        {errors.password && (
+                          <p className="text-destructive text-sm mt-1">{errors.password}</p>
+                        )}
                       </div>
                       <Button
                         type="submit"
@@ -230,51 +271,71 @@ const Auth = () => {
                 <TabsContent value="signup" className="space-y-4 mt-6">
                   <form onSubmit={handleSignUp} className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
-                      <Input
-                        type="text"
-                        placeholder="First Name"
-                        value={firstName}
-                        onChange={(e) => setFirstName(e.target.value)}
-                        className="bg-brand-dark border-brand-green/20 text-white"
-                        required
-                      />
-                      <Input
-                        type="text"
-                        placeholder="Last Name"
-                        value={lastName}
-                        onChange={(e) => setLastName(e.target.value)}
-                        className="bg-brand-dark border-brand-green/20 text-white"
-                        required
-                      />
+                      <div>
+                        <Input
+                          type="text"
+                          placeholder="First Name"
+                          value={formData.firstName}
+                          onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                          className="bg-brand-dark border-brand-green/20 text-white"
+                          required
+                        />
+                        {errors.firstName && (
+                          <p className="text-destructive text-sm mt-1">{errors.firstName}</p>
+                        )}
+                      </div>
+                      <div>
+                        <Input
+                          type="text"
+                          placeholder="Last Name"
+                          value={formData.lastName}
+                          onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                          className="bg-brand-dark border-brand-green/20 text-white"
+                          required
+                        />
+                        {errors.lastName && (
+                          <p className="text-destructive text-sm mt-1">{errors.lastName}</p>
+                        )}
+                      </div>
                     </div>
                     <div>
                       <Input
                         type="email"
                         placeholder="Email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                         className="bg-brand-dark border-brand-green/20 text-white"
                         required
                       />
-                    </div>
-                    <div>
-                      <Input
-                        type="tel"
-                        placeholder="Phone Number (optional)"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        className="bg-brand-dark border-brand-green/20 text-white"
-                      />
+                      {errors.email && (
+                        <p className="text-destructive text-sm mt-1">{errors.email}</p>
+                      )}
                     </div>
                     <div>
                       <Input
                         type="password"
-                        placeholder="Password (min. 6 characters)"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Password (min. 8 characters)"
+                        value={formData.password}
+                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                         className="bg-brand-dark border-brand-green/20 text-white"
                         required
                       />
+                      {errors.password && (
+                        <p className="text-destructive text-sm mt-1">{errors.password}</p>
+                      )}
+                    </div>
+                    <div>
+                      <Input
+                        type="password"
+                        placeholder="Confirm Password"
+                        value={formData.confirmPassword}
+                        onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                        className="bg-brand-dark border-brand-green/20 text-white"
+                        required
+                      />
+                      {errors.confirmPassword && (
+                        <p className="text-destructive text-sm mt-1">{errors.confirmPassword}</p>
+                      )}
                     </div>
                     <Button
                       type="submit"

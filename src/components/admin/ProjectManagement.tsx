@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { projectSchema, type ProjectFormData } from '@/lib/validation-schemas';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -30,6 +31,7 @@ const ProjectManagement = () => {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [errors, setErrors] = useState<Partial<Record<keyof ProjectFormData, string>>>({});
   
   const [formData, setFormData] = useState({
     name: '',
@@ -86,10 +88,26 @@ const ProjectManagement = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.description || !formData.github_url) {
+    // Validate form data
+    try {
+      projectSchema.parse({
+        name: formData.name,
+        description: formData.description,
+        github_url: formData.github_url,
+        language: formData.language,
+        category: formData.category,
+        tags: formData.tags
+      });
+      setErrors({});
+    } catch (error: any) {
+      const fieldErrors: Partial<Record<keyof ProjectFormData, string>> = {};
+      error.errors.forEach((err: any) => {
+        fieldErrors[err.path[0] as keyof ProjectFormData] = err.message;
+      });
+      setErrors(fieldErrors);
       toast({
-        title: "Error",
-        description: "Please fill in all required fields",
+        title: "Validation Error",
+        description: "Please fix the errors in the form",
         variant: "destructive"
       });
       return;
@@ -139,6 +157,7 @@ const ProjectManagement = () => {
     setEditingProject(null);
     setShowForm(false);
     setTagInput('');
+    setErrors({});
   };
 
   const editProject = (project: Project) => {
@@ -224,6 +243,9 @@ const ProjectManagement = () => {
                   className="bg-brand-dark border-brand-green/20 text-white"
                   required
                 />
+                {errors.name && (
+                  <p className="text-destructive text-sm mt-1">{errors.name}</p>
+                )}
               </div>
               
               <div>
@@ -235,6 +257,9 @@ const ProjectManagement = () => {
                   rows={4}
                   required
                 />
+                {errors.description && (
+                  <p className="text-destructive text-sm mt-1">{errors.description}</p>
+                )}
               </div>
               
               <div>
@@ -246,6 +271,9 @@ const ProjectManagement = () => {
                   className="bg-brand-dark border-brand-green/20 text-white"
                   required
                 />
+                {errors.github_url && (
+                  <p className="text-destructive text-sm mt-1">{errors.github_url}</p>
+                )}
               </div>
               
               <div className="grid grid-cols-2 gap-4">

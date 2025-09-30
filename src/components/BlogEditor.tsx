@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { blogSchema, type BlogFormData } from '@/lib/validation-schemas';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -77,10 +78,22 @@ const BlogEditor = ({ blogId, onClose, onSave }: BlogEditorProps) => {
 
   const saveBlog = async (newStatus: 'draft' | 'pending' | 'published') => {
     if (!user) return;
-    if (!title.trim() || !content.trim()) {
+    
+    // Validate form data
+    try {
+      blogSchema.parse({
+        title,
+        content,
+        excerpt,
+        category,
+        tags,
+        status: newStatus
+      });
+    } catch (error: any) {
+      const errorMessage = error.errors?.[0]?.message || 'Invalid input data';
       toast({
-        title: "Error",
-        description: "Title and content are required",
+        title: "Validation Error",
+        description: errorMessage,
         variant: "destructive"
       });
       return;

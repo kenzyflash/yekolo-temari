@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+// Re-export for backwards compatibility
+export { blogSchema as blogPostSchema } from './validation-schemas';
+
 // Contact form validation schema
 export const contactSchema = z.object({
   name: z

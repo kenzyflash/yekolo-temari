@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { profileSchema, type ProfileFormData } from '@/lib/validation-schemas';
 import { User, Phone, Mail, FileText, Save } from 'lucide-react';
 
 interface Profile {
@@ -26,10 +27,11 @@ export function ProfileManager() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState<Partial<Record<keyof ProfileFormData, string>>>({});
   
-  const [formData, setFormData] = useState({
-    first_name: '',
-    last_name: '',
+  const [formData, setFormData] = useState<ProfileFormData>({
+    firstName: '',
+    lastName: '',
     phone: '',
     bio: ''
   });
@@ -56,8 +58,8 @@ export function ProfileManager() {
       if (data) {
         setProfile(data);
         setFormData({
-          first_name: data.first_name || '',
-          last_name: data.last_name || '',
+          firstName: data.first_name || '',
+          lastName: data.last_name || '',
           phone: data.phone || '',
           bio: data.bio || ''
         });
@@ -78,13 +80,34 @@ export function ProfileManager() {
     e.preventDefault();
     if (!user) return;
 
+    // Validate form data
+    try {
+      profileSchema.parse(formData);
+      setErrors({});
+    } catch (error: any) {
+      const fieldErrors: Partial<Record<keyof ProfileFormData, string>> = {};
+      error.errors.forEach((err: any) => {
+        fieldErrors[err.path[0] as keyof ProfileFormData] = err.message;
+      });
+      setErrors(fieldErrors);
+      toast({
+        title: "Validation Error",
+        description: "Please fix the errors in the form",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setSaving(true);
     try {
       const { error } = await supabase
         .from('profiles')
         .upsert({
           user_id: user.id,
-          ...formData,
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          phone: formData.phone,
+          bio: formData.bio,
           updated_at: new Date().toISOString()
         });
 
@@ -132,11 +155,14 @@ export function ProfileManager() {
                 First Name *
               </label>
               <Input
-                value={formData.first_name}
-                onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                value={formData.firstName}
+                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                 className="bg-brand-dark border-brand-green/20 text-white"
                 required
               />
+              {errors.firstName && (
+                <p className="text-destructive text-sm mt-1">{errors.firstName}</p>
+              )}
             </div>
             
             <div>
@@ -144,11 +170,14 @@ export function ProfileManager() {
                 Last Name *
               </label>
               <Input
-                value={formData.last_name}
-                onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                value={formData.lastName}
+                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                 className="bg-brand-dark border-brand-green/20 text-white"
                 required
               />
+              {errors.lastName && (
+                <p className="text-destructive text-sm mt-1">{errors.lastName}</p>
+              )}
             </div>
           </div>
 
@@ -179,6 +208,9 @@ export function ProfileManager() {
               className="bg-brand-dark border-brand-green/20 text-white"
               placeholder="Enter your phone number"
             />
+            {errors.phone && (
+              <p className="text-destructive text-sm mt-1">{errors.phone}</p>
+            )}
           </div>
 
           <div>
@@ -193,6 +225,9 @@ export function ProfileManager() {
               rows={4}
               placeholder="Tell us about yourself..."
             />
+            {errors.bio && (
+              <p className="text-destructive text-sm mt-1">{errors.bio}</p>
+            )}
           </div>
 
           <div className="flex justify-end pt-4">

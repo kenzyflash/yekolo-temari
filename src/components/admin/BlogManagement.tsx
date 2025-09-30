@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { blogSchema } from '@/lib/validation-schemas';
 import { Button } from '@/components/ui/button';
 import { Edit, Trash2, Eye, Plus, Check, X } from 'lucide-react';
 import BlogEditor from '@/components/BlogEditor';

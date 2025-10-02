@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Edit, Trash2, Plus, X, Save, Users } from 'lucide-react';
+import { Edit, Trash2, Plus, X, Save, Users, Search } from 'lucide-react';
 import { EventParticipants } from './EventParticipants';
 import { eventSchema, type EventFormData } from '@/lib/validation-schemas';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -34,6 +34,8 @@ const EventManagement = () => {
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   
   const [formData, setFormData] = useState({
     title: '',
@@ -196,7 +198,7 @@ const EventManagement = () => {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h2 className="text-xl font-bold text-white">Event Management</h2>
         <Button 
           onClick={() => setShowForm(true)}
@@ -205,6 +207,32 @@ const EventManagement = () => {
           <Plus size={16} className="mr-2" />
           New Event
         </Button>
+      </div>
+
+      {/* Search and Filter */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-brand-green h-5 w-5" />
+          <Input
+            type="text"
+            placeholder="Search events..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 bg-brand-darker border-brand-green/20 text-white"
+          />
+        </div>
+        
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="bg-brand-darker border-brand-green/20 text-white">
+            <SelectValue placeholder="Filter by status" />
+          </SelectTrigger>
+          <SelectContent className="bg-brand-darker border-brand-green/20">
+            <SelectItem value="all" className="text-white">All Status</SelectItem>
+            <SelectItem value="upcoming" className="text-white">Upcoming</SelectItem>
+            <SelectItem value="completed" className="text-white">Completed</SelectItem>
+            <SelectItem value="cancelled" className="text-white">Cancelled</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {showForm && (
@@ -334,7 +362,15 @@ const EventManagement = () => {
       )}
 
       <div className="space-y-4">
-        {events.map((event) => (
+        {events
+          .filter(event => statusFilter === 'all' || event.status === statusFilter)
+          .filter(event => 
+            searchTerm === '' || 
+            event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            event.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            event.location.toLowerCase().includes(searchTerm.toLowerCase())
+          )
+          .map((event) => (
           <div key={event.id} className="bg-brand-darker p-4 rounded-lg border border-brand-green/20">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
               <div className="flex-1 min-w-0">

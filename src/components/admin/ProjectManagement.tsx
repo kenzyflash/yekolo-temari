@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Edit, Trash2, Plus, X, Save } from 'lucide-react';
+import { Edit, Trash2, Plus, X, Save, Search } from 'lucide-react';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
 interface Project {
@@ -36,6 +36,8 @@ const ProjectManagement = () => {
   const [errors, setErrors] = useState<Partial<Record<keyof ProjectFormData, string>>>({});
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('all');
   
   const [formData, setFormData] = useState({
     name: '',
@@ -214,7 +216,7 @@ const ProjectManagement = () => {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h2 className="text-xl font-bold text-white">Project Management</h2>
         <Button 
           onClick={() => setShowForm(true)}
@@ -223,6 +225,32 @@ const ProjectManagement = () => {
           <Plus size={16} className="mr-2" />
           New Project
         </Button>
+      </div>
+
+      {/* Search and Filter */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-brand-green h-5 w-5" />
+          <Input
+            type="text"
+            placeholder="Search projects..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 bg-brand-darker border-brand-green/20 text-white"
+          />
+        </div>
+        
+        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+          <SelectTrigger className="bg-brand-darker border-brand-green/20 text-white">
+            <SelectValue placeholder="Filter by category" />
+          </SelectTrigger>
+          <SelectContent className="bg-brand-darker border-brand-green/20">
+            <SelectItem value="all" className="text-white">All Categories</SelectItem>
+            {categories.map(cat => (
+              <SelectItem key={cat} value={cat} className="text-white">{cat}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {showForm && (
@@ -394,7 +422,15 @@ const ProjectManagement = () => {
       )}
 
       <div className="space-y-4">
-        {projects.map((project) => (
+        {projects
+          .filter(project => categoryFilter === 'all' || project.category === categoryFilter)
+          .filter(project => 
+            searchTerm === '' || 
+            project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            project.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            project.tags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+          )
+          .map((project) => (
           <div key={project.id} className="bg-brand-darker p-4 rounded-lg border border-brand-green/20">
             <div className="flex justify-between items-start">
               <div className="flex-1">

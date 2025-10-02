@@ -5,9 +5,12 @@ import { useToast } from '@/hooks/use-toast';
 import { blogSchema } from '@/lib/validation-schemas';
 import DOMPurify from 'dompurify';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2, Eye, Plus, Check, X } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Edit, Trash2, Eye, Plus, Check, X, Search } from 'lucide-react';
 import BlogEditor from '@/components/BlogEditor';
 import BlogPreview from '@/components/BlogPreview';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 interface Blog {
   id: string;
@@ -30,6 +33,8 @@ const BlogManagement = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [showPreview, setShowPreview] = useState(false);
   const [previewBlogId, setPreviewBlogId] = useState<string>('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchBlogs();
@@ -127,8 +132,7 @@ const BlogManagement = () => {
   };
 
   const deleteBlog = async (blogId: string) => {
-    const confirmed = confirm('Are you sure you want to delete this blog? This action cannot be undone.');
-    if (!confirmed) return;
+    setDeletingId(blogId);
     
     try {
       const { error } = await supabase
@@ -149,12 +153,19 @@ const BlogManagement = () => {
         description: error.message || "Failed to delete blog",
         variant: "destructive"
       });
+    } finally {
+      setDeletingId(null);
     }
   };
 
-  const filteredBlogs = statusFilter === 'all' 
-    ? blogs 
-    : blogs.filter(blog => blog.status === statusFilter);
+  const filteredBlogs = blogs
+    .filter(blog => statusFilter === 'all' || blog.status === statusFilter)
+    .filter(blog => 
+      searchTerm === '' || 
+      blog.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      blog.author_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      blog.category.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -167,11 +178,7 @@ const BlogManagement = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-brand-green text-lg">Loading blogs...</div>
-      </div>
-    );
+    return <LoadingSpinner text="Loading blogs..." />;
   }
 
   return (
@@ -187,8 +194,20 @@ const BlogManagement = () => {
         </Button>
       </div>
 
+      {/* Search */}
+      <div className="relative mb-4">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-brand-green h-5 w-5" />
+        <Input
+          type="text"
+          placeholder="Search blogs by title, author, or category..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-10 bg-brand-darker border-brand-green/20 text-white"
+        />
+      </div>
+
       {/* Status Filter */}
-      <div className="flex gap-2 mb-6">
+      <div className="flex flex-wrap gap-2 mb-6">
         {['all', 'published', 'pending', 'draft', 'rejected'].map(status => (
           <button
             key={status}
@@ -261,14 +280,41 @@ const BlogManagement = () => {
                 >
                   <Edit size={14} />
                 </Button>
-                <Button
-                  onClick={() => deleteBlog(blog.id)}
-                  size="sm"
-                  variant="ghost"
-                  className="text-brand-green hover:text-brand-red"
-                >
-                  <Trash2 size={14} />
-                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-brand-green hover:text-brand-red"
+                      disabled={deletingId === blog.id}
+                    >
+                      {deletingId === blog.id ? (
+                        <LoadingSpinner size="sm" />
+                      ) : (
+                        <Trash2 size={14} />
+                      )}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent className="bg-brand-dark border border-brand-green/20">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle className="text-white">Delete Blog</AlertDialogTitle>
+                      <AlertDialogDescription className="text-brand-green/60">
+                        Are you sure you want to delete "{blog.title}"? This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel className="border-brand-green/20 text-brand-green hover:bg-brand-green/10">
+                        Cancel
+                      </AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => deleteBlog(blog.id)}
+                        className="bg-brand-red hover:bg-brand-red/80 text-white"
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </div>
           </div>

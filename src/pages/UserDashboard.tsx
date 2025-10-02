@@ -12,6 +12,7 @@ import { ProfileManager } from '@/components/user/ProfileManager';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BookOpen, Bell, User, Settings } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 interface DashboardStats {
   totalBlogs: number;
@@ -89,10 +90,7 @@ const UserDashboard = () => {
   if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-brand-dark flex items-center justify-center">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-brand-green mb-4"></div>
-          <div className="text-brand-green text-xl">Loading dashboard...</div>
-        </div>
+        <LoadingSpinner size="lg" text="Loading dashboard..." fullScreen />
       </div>
     );
   }

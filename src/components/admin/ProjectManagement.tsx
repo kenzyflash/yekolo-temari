@@ -9,7 +9,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Edit, Trash2, Plus, X, Save } from 'lucide-react';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 interface Project {
   id: string;
@@ -32,6 +34,8 @@ const ProjectManagement = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [errors, setErrors] = useState<Partial<Record<keyof ProjectFormData, string>>>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -87,6 +91,7 @@ const ProjectManagement = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitting(true);
     
     // Validate form data
     try {
@@ -110,6 +115,7 @@ const ProjectManagement = () => {
         description: "Please fix the errors in the form",
         variant: "destructive"
       });
+      setSubmitting(false);
       return;
     }
 
@@ -139,6 +145,8 @@ const ProjectManagement = () => {
         description: error.message,
         variant: "destructive"
       });
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -177,7 +185,7 @@ const ProjectManagement = () => {
   };
 
   const deleteProject = async (projectId: string) => {
-    if (!confirm('Are you sure you want to delete this project?')) return;
+    setDeletingId(projectId);
     
     try {
       const { error } = await supabase
@@ -195,11 +203,13 @@ const ProjectManagement = () => {
         description: error.message,
         variant: "destructive"
       });
+    } finally {
+      setDeletingId(null);
     }
   };
 
   if (loading) {
-    return <div className="text-brand-green">Loading projects...</div>;
+    return <LoadingSpinner text="Loading projects..." />;
   }
 
   return (
@@ -361,11 +371,20 @@ const ProjectManagement = () => {
               </div>
               
               <div className="flex gap-4 pt-4">
-                <Button type="submit" className="bg-brand-red hover:bg-brand-accent-red">
-                  <Save size={16} className="mr-2" />
-                  {editingProject ? 'Update Project' : 'Create Project'}
+                <Button type="submit" className="bg-brand-red hover:bg-brand-accent-red" disabled={submitting}>
+                  {submitting ? (
+                    <>
+                      <LoadingSpinner size="sm" />
+                      <span className="ml-2">Saving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save size={16} className="mr-2" />
+                      {editingProject ? 'Update Project' : 'Create Project'}
+                    </>
+                  )}
                 </Button>
-                <Button type="button" onClick={resetForm} variant="outline">
+                <Button type="button" onClick={resetForm} variant="outline" disabled={submitting}>
                   Cancel
                 </Button>
               </div>
@@ -418,14 +437,41 @@ const ProjectManagement = () => {
                 >
                   <Edit size={14} />
                 </Button>
-                <Button
-                  onClick={() => deleteProject(project.id)}
-                  size="sm"
-                  variant="ghost"
-                  className="text-brand-green hover:text-brand-red"
-                >
-                  <Trash2 size={14} />
-                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-brand-green hover:text-brand-red"
+                      disabled={deletingId === project.id}
+                    >
+                      {deletingId === project.id ? (
+                        <LoadingSpinner size="sm" />
+                      ) : (
+                        <Trash2 size={14} />
+                      )}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent className="bg-brand-dark border border-brand-green/20">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle className="text-white">Delete Project</AlertDialogTitle>
+                      <AlertDialogDescription className="text-brand-green/60">
+                        Are you sure you want to delete "{project.name}"? This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel className="border-brand-green/20 text-brand-green hover:bg-brand-green/10">
+                        Cancel
+                      </AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => deleteProject(project.id)}
+                        className="bg-brand-red hover:bg-brand-red/80 text-white"
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </div>
           </div>

@@ -7,9 +7,11 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Edit, Trash2, Plus, X, Save, Users } from 'lucide-react';
 import { EventParticipants } from './EventParticipants';
 import { eventSchema, type EventFormData } from '@/lib/validation-schemas';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 interface Event {
   id: string;
@@ -30,6 +32,8 @@ const EventManagement = () => {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     title: '',
@@ -68,6 +72,7 @@ const EventManagement = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitting(true);
     
     try {
       // Validate form data using zod schema
@@ -126,6 +131,8 @@ const EventManagement = () => {
           variant: "destructive"
         });
       }
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -160,7 +167,7 @@ const EventManagement = () => {
   };
 
   const deleteEvent = async (eventId: string) => {
-    if (!confirm('Are you sure you want to delete this event?')) return;
+    setDeletingId(eventId);
     
     try {
       const { error } = await supabase
@@ -178,11 +185,13 @@ const EventManagement = () => {
         description: error.message,
         variant: "destructive"
       });
+    } finally {
+      setDeletingId(null);
     }
   };
 
   if (loading) {
-    return <div className="text-brand-green">Loading events...</div>;
+    return <LoadingSpinner text="Loading events..." />;
   }
 
   return (
@@ -302,11 +311,20 @@ const EventManagement = () => {
               </div>
               
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4">
-                <Button type="submit" className="bg-brand-red hover:bg-brand-accent-red touch-target">
-                  <Save size={16} className="mr-2" />
-                  {editingEvent ? 'Update Event' : 'Create Event'}
+                <Button type="submit" className="bg-brand-red hover:bg-brand-accent-red touch-target" disabled={submitting}>
+                  {submitting ? (
+                    <>
+                      <LoadingSpinner size="sm" />
+                      <span className="ml-2">Saving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save size={16} className="mr-2" />
+                      {editingEvent ? 'Update Event' : 'Create Event'}
+                    </>
+                  )}
                 </Button>
-                <Button type="button" onClick={resetForm} variant="outline" className="touch-target">
+                <Button type="button" onClick={resetForm} variant="outline" className="touch-target" disabled={submitting}>
                   Cancel
                 </Button>
               </div>
@@ -365,15 +383,44 @@ const EventManagement = () => {
                   <Edit size={14} />
                   <span className="ml-1 sm:hidden lg:inline">Edit</span>
                 </Button>
-                <Button
-                  onClick={() => deleteEvent(event.id)}
-                  size="sm"
-                  variant="ghost"
-                  className="text-brand-green hover:text-brand-red touch-target"
-                >
-                  <Trash2 size={14} />
-                  <span className="ml-1 sm:hidden lg:inline">Delete</span>
-                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-brand-green hover:text-brand-red touch-target"
+                      disabled={deletingId === event.id}
+                    >
+                      {deletingId === event.id ? (
+                        <LoadingSpinner size="sm" />
+                      ) : (
+                        <>
+                          <Trash2 size={14} />
+                          <span className="ml-1 sm:hidden lg:inline">Delete</span>
+                        </>
+                      )}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent className="bg-brand-dark border border-brand-green/20">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle className="text-white">Delete Event</AlertDialogTitle>
+                      <AlertDialogDescription className="text-brand-green/60">
+                        Are you sure you want to delete "{event.title}"? This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel className="border-brand-green/20 text-brand-green hover:bg-brand-green/10">
+                        Cancel
+                      </AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => deleteEvent(event.id)}
+                        className="bg-brand-red hover:bg-brand-red/80 text-white"
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </div>
           </div>

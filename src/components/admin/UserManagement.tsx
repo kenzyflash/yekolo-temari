@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Users, Search, Shield, User, AlertTriangle } from 'lucide-react';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 interface UserWithRole {
   id: string;
@@ -188,7 +189,7 @@ const UserManagement = () => {
   };
 
   if (loading) {
-    return <div className="text-brand-green">Loading users...</div>;
+    return <LoadingSpinner text="Loading users..." />;
   }
 
   return (

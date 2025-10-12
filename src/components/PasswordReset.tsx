@@ -26,14 +26,30 @@ const PasswordReset = ({ onBack }: PasswordResetProps) => {
       return;
     }
 
+    // Check rate limit
+    const { authRateLimiters } = await import('@/lib/rateLimiter');
+    const rateLimitCheck = authRateLimiters.passwordReset.check();
+    if (!rateLimitCheck.allowed) {
+      toast({
+        title: "Too Many Attempts",
+        description: rateLimitCheck.message || "Please try again later",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/auth`
       });
 
-      if (error) throw error;
+      if (error) {
+        authRateLimiters.passwordReset.recordAttempt();
+        throw error;
+      }
 
+      authRateLimiters.passwordReset.recordSuccess();
       setSent(true);
       toast({
         title: "Reset Link Sent",

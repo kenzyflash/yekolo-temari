@@ -45,6 +45,18 @@ const Join = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Check rate limit
+    const { formRateLimiters } = await import('@/lib/rateLimiter');
+    const rateLimitCheck = formRateLimiters.contact.check();
+    if (!rateLimitCheck.allowed) {
+      toast({
+        title: "Too Many Submissions",
+        description: rateLimitCheck.message || "Please try again later",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     // Validate form data using zod schema
     try {
       const validatedData = contactSchema.parse(formData);
@@ -60,8 +72,12 @@ const Join = () => {
           user_id: user?.id || null
         });
 
-      if (error) throw error;
+      if (error) {
+        formRateLimiters.contact.recordAttempt();
+        throw error;
+      }
 
+      formRateLimiters.contact.recordSuccess();
       toast({
         title: "Message Sent!",
         description: "Thank you for reaching out. We'll get back to you soon!",

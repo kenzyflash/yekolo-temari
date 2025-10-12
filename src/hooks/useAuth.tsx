@@ -39,6 +39,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const signUp = async (email: string, password: string, userData?: any) => {
+    // Import rate limiter dynamically to avoid circular dependencies
+    const { authRateLimiters } = await import('@/lib/rateLimiter');
+    
+    // Check rate limit
+    const rateLimitCheck = authRateLimiters.signUp.check();
+    if (!rateLimitCheck.allowed) {
+      return { 
+        error: { 
+          message: rateLimitCheck.message || 'Too many signup attempts. Please try again later.'
+        } 
+      };
+    }
+
     try {
       // Clear any existing auth state before signup
       await supabase.auth.signOut();
@@ -54,8 +67,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
       });
       
-      if (error) throw error;
+      if (error) {
+        authRateLimiters.signUp.recordAttempt();
+        throw error;
+      }
       
+      authRateLimiters.signUp.recordSuccess();
       return { error: null, data };
     } catch (error: any) {
       console.error('Signup error:', error);
@@ -64,10 +81,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const signIn = async (email: string, password: string) => {
+    // Import rate limiter dynamically to avoid circular dependencies
+    const { authRateLimiters } = await import('@/lib/rateLimiter');
+    
+    // Check rate limit
+    const rateLimitCheck = authRateLimiters.signIn.check();
+    if (!rateLimitCheck.allowed) {
+      return { 
+        error: { 
+          message: rateLimitCheck.message || 'Too many login attempts. Please try again later.'
+        } 
+      };
+    }
+
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password
     });
+    
+    if (error) {
+      authRateLimiters.signIn.recordAttempt();
+    } else {
+      authRateLimiters.signIn.recordSuccess();
+    }
+    
     return { error };
   };
 

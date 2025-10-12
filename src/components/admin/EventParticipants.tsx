@@ -76,14 +76,14 @@ export function EventParticipants({ eventId }: EventParticipantsProps) {
         (participantsData || []).map(async (participant) => {
           const { data: profileData } = await supabase
             .from('profiles')
-            .select('first_name, last_name, phone, bio')
+            .select('first_name, last_name, phone, bio, email')
             .eq('user_id', participant.user_id)
             .maybeSingle();
 
           return {
             ...participant,
             profiles: profileData,
-            user_email: 'user@example.com' // Placeholder for now
+            user_email: profileData?.email || 'No email'
           };
         })
       );

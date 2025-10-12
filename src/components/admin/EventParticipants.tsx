@@ -62,33 +62,14 @@ export function EventParticipants({ eventId }: EventParticipantsProps) {
       if (eventError) throw eventError;
       setEvent(eventData);
 
-      // Fetch participants first
-      const { data: participantsData, error: participantsError } = await supabase
-        .from('event_participants')
-        .select('id, event_id, user_id, registered_at, checked_in, check_in_time, notes')
-        .eq('event_id', eventId)
-        .order('registered_at', { ascending: false });
+      // Use edge function to fetch participants with emails securely
+      const { data, error } = await supabase.functions.invoke('get-event-participants', {
+        body: { eventId }
+      });
 
-      if (participantsError) throw participantsError;
+      if (error) throw error;
 
-      // Then fetch profile data for each participant
-      const participantsWithProfiles = await Promise.all(
-        (participantsData || []).map(async (participant) => {
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('first_name, last_name, phone, bio, email')
-            .eq('user_id', participant.user_id)
-            .maybeSingle();
-
-          return {
-            ...participant,
-            profiles: profileData,
-            user_email: profileData?.email || 'No email'
-          };
-        })
-      );
-
-      setParticipants(participantsWithProfiles);
+      setParticipants(data.participants || []);
     } catch (error: any) {
       console.error('Error fetching participants:', error);
       toast({

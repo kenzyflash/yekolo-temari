@@ -1,1 +1,4 @@
 project_id = "mdwdnwgqnditzvwehdsk"
+
+[functions.get-event-participants]
+verify_jwt = true

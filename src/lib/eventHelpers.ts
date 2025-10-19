@@ -31,15 +31,25 @@ export async function registerForEvent(
       return { success: false, error: 'You are already registered for this event' };
     }
 
-    // Get current participant count with lock
+    // Get current event details including registration status
     const { data: event, error: eventError } = await supabase
       .from('events')
-      .select('participants')
+      .select('participants, registration_open, status')
       .eq('id', eventId)
       .single();
 
     if (eventError) {
       return { success: false, error: eventError.message };
+    }
+
+    // Check if registration is open
+    if (!event.registration_open) {
+      return { success: false, error: 'Registration for this event is currently closed' };
+    }
+
+    // Check if event is upcoming
+    if (event.status !== 'upcoming') {
+      return { success: false, error: 'Registration is only available for upcoming events' };
     }
 
     // Check capacity

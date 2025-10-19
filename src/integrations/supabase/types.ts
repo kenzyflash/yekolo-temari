@@ -141,6 +141,7 @@ export type Database = {
         Row: {
           check_in_time: string | null
           checked_in: boolean | null
+          confirmation_sent: boolean
           event_id: string
           id: string
           notes: string | null
@@ -150,6 +151,7 @@ export type Database = {
         Insert: {
           check_in_time?: string | null
           checked_in?: boolean | null
+          confirmation_sent?: boolean
           event_id: string
           id?: string
           notes?: string | null
@@ -159,6 +161,7 @@ export type Database = {
         Update: {
           check_in_time?: string | null
           checked_in?: boolean | null
+          confirmation_sent?: boolean
           event_id?: string
           id?: string
           notes?: string | null
@@ -185,6 +188,7 @@ export type Database = {
           id: string
           location: string
           participants: number | null
+          registration_open: boolean
           status: string | null
           title: string
           updated_at: string | null
@@ -198,6 +202,7 @@ export type Database = {
           id?: string
           location: string
           participants?: number | null
+          registration_open?: boolean
           status?: string | null
           title: string
           updated_at?: string | null
@@ -211,6 +216,7 @@ export type Database = {
           id?: string
           location?: string
           participants?: number | null
+          registration_open?: boolean
           status?: string | null
           title?: string
           updated_at?: string | null

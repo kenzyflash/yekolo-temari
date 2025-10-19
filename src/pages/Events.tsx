@@ -21,6 +21,7 @@ interface Event {
   event_type: string;
   participants: number;
   status: string;
+  registration_open: boolean;
 }
 
 const Events = () => {
@@ -286,17 +287,23 @@ const Events = () => {
                               {event.event_type}
                             </span>
                             {event.status === 'upcoming' && (
-                              <Button
-                                onClick={() => handleEventRegistration(event.id, isRegistered)}
-                                disabled={processingRegistration === event.id || event.participants >= MAX_EVENT_CAPACITY}
-                                className={`text-sm sm:text-base ${isRegistered 
-                                  ? "bg-brand-green/20 text-brand-green hover:bg-red-600 hover:text-white" 
-                                  : "bg-brand-green hover:bg-brand-green/80 text-brand-dark"
-                                }`}
-                                size="sm"
-                              >
-                                {processingRegistration === event.id ? 'Processing...' : isRegistered ? 'Unregister' : event.participants >= MAX_EVENT_CAPACITY ? 'Full' : 'Register'}
-                              </Button>
+                              event.registration_open ? (
+                                <Button
+                                  onClick={() => handleEventRegistration(event.id, isRegistered)}
+                                  disabled={processingRegistration === event.id || event.participants >= MAX_EVENT_CAPACITY}
+                                  className={`text-sm sm:text-base ${isRegistered 
+                                    ? "bg-brand-green/20 text-brand-green hover:bg-red-600 hover:text-white" 
+                                    : "bg-brand-green hover:bg-brand-green/80 text-brand-dark"
+                                  }`}
+                                  size="sm"
+                                >
+                                  {processingRegistration === event.id ? 'Processing...' : isRegistered ? 'Unregister' : event.participants >= MAX_EVENT_CAPACITY ? 'Full' : 'Register'}
+                                </Button>
+                              ) : (
+                                <span className="px-3 sm:px-4 py-1 sm:py-2 bg-red-500/20 text-red-400 rounded-lg text-sm sm:text-base">
+                                  Registration Closed
+                                </span>
+                              )
                             )}
                           </div>
                         </div>

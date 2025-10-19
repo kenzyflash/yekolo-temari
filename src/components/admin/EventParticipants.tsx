@@ -5,7 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Search, Download, UserCheck, Mail, Phone, Calendar } from 'lucide-react';
 
@@ -17,13 +16,10 @@ interface EventParticipant {
   checked_in: boolean;
   check_in_time?: string;
   notes?: string;
-  profiles: {
-    first_name?: string;
-    last_name?: string;
-    phone?: string;
-    bio?: string;
-  } | null;
-  user_email?: string;
+  confirmation_sent: boolean;
+  user_email: string;
+  user_phone: string;
+  user_name: string;
 }
 
 interface Event {
@@ -62,7 +58,7 @@ export function EventParticipants({ eventId }: EventParticipantsProps) {
       if (eventError) throw eventError;
       setEvent(eventData);
 
-      // Use edge function to fetch participants with emails securely
+      // Use edge function to fetch participants with auth.users data
       const { data, error } = await supabase.functions.invoke('get-event-participants', {
         body: { eventId }
       });
@@ -112,9 +108,9 @@ export function EventParticipants({ eventId }: EventParticipantsProps) {
 
   const exportParticipants = () => {
     const csvContent = [
-      'Name,Email,Phone,Registration Date,Checked In,Check-in Time',
+      'Name,Email,Phone,Registration Date,Checked In,Check-in Time,Confirmation Sent',
       ...filteredParticipants.map(p => 
-        `"${getParticipantName(p)}","${p.user_email}","${p.profiles?.phone || 'N/A'}","${new Date(p.registered_at).toLocaleDateString()}","${p.checked_in ? 'Yes' : 'No'}","${p.check_in_time ? new Date(p.check_in_time).toLocaleString() : 'N/A'}"`
+        `"${p.user_name}","${p.user_email}","${p.user_phone}","${new Date(p.registered_at).toLocaleDateString()}","${p.checked_in ? 'Yes' : 'No'}","${p.check_in_time ? new Date(p.check_in_time).toLocaleString() : 'N/A'}","${p.confirmation_sent ? 'Yes' : 'No'}"`
       )
     ].join('\n');
 
@@ -127,21 +123,11 @@ export function EventParticipants({ eventId }: EventParticipantsProps) {
     window.URL.revokeObjectURL(url);
   };
 
-  const getParticipantName = (participant: EventParticipant) => {
-    const { first_name, last_name } = participant.profiles || {};
-    if (first_name && last_name) {
-      return `${first_name} ${last_name}`;
-    }
-    return first_name || last_name || 'Anonymous User';
-  };
-
   const filteredParticipants = participants.filter(participant => {
-    const name = getParticipantName(participant).toLowerCase();
-    const email = participant.user_email?.toLowerCase() || '';
-    const phone = participant.profiles?.phone?.toLowerCase() || '';
-    return name.includes(searchTerm.toLowerCase()) || 
-           email.includes(searchTerm.toLowerCase()) || 
-           phone.includes(searchTerm.toLowerCase());
+    const search = searchTerm.toLowerCase();
+    return participant.user_name.toLowerCase().includes(search) || 
+           participant.user_email.toLowerCase().includes(search) || 
+           participant.user_phone.toLowerCase().includes(search);
   });
 
   if (loading) {
@@ -166,6 +152,7 @@ export function EventParticipants({ eventId }: EventParticipantsProps) {
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 text-sm text-muted-foreground">
               <span>Total: {participants.length}</span>
               <span>Checked In: {participants.filter(p => p.checked_in).length}</span>
+              <span>Confirmations Sent: {participants.filter(p => p.confirmation_sent).length}</span>
             </div>
             <div className="flex gap-2">
               <Button onClick={exportParticipants} variant="outline" size="sm" className="touch-target">
@@ -177,12 +164,12 @@ export function EventParticipants({ eventId }: EventParticipantsProps) {
         </CardContent>
       </Card>
 
-      {/* Search and Filters */}
+      {/* Search */}
       <div className="flex gap-4 items-center">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search participants..."
+            placeholder="Search by name, email, or phone..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10 touch-target"
@@ -209,9 +196,7 @@ export function EventParticipants({ eventId }: EventParticipantsProps) {
                 {filteredParticipants.map((participant) => (
                   <TableRow key={participant.id}>
                     <TableCell className="font-medium">
-                      <div className="break-words">
-                        {getParticipantName(participant)}
-                      </div>
+                      <div className="break-words">{participant.user_name}</div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2 min-w-0">
@@ -222,7 +207,7 @@ export function EventParticipants({ eventId }: EventParticipantsProps) {
                     <TableCell className="hidden sm:table-cell">
                       <div className="flex items-center gap-2">
                         <Phone className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">{participant.profiles?.phone || 'N/A'}</span>
+                        <span className="text-sm">{participant.user_phone}</span>
                       </div>
                     </TableCell>
                     <TableCell className="hidden md:table-cell">

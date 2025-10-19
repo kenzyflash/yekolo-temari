@@ -23,6 +23,7 @@ interface Event {
   event_type: string;
   participants: number;
   status: string;
+  registration_open: boolean;
   created_at: string;
 }
 
@@ -45,7 +46,8 @@ const EventManagement = () => {
     location: '',
     event_type: 'Meetup',
     participants: 0,
-    status: 'upcoming'
+    status: 'upcoming',
+    registration_open: true
   });
 
   useEffect(() => {
@@ -91,6 +93,7 @@ const EventManagement = () => {
             location: validatedData.location || '',
             event_type: validatedData.event_type,
             status: validatedData.status,
+            registration_open: formData.registration_open,
             updated_at: new Date().toISOString()
           })
           .eq('id', editingEvent.id);
@@ -108,6 +111,7 @@ const EventManagement = () => {
             location: validatedData.location || '',
             event_type: validatedData.event_type,
             status: validatedData.status,
+            registration_open: formData.registration_open,
             participants: 0
           }]);
 
@@ -147,7 +151,8 @@ const EventManagement = () => {
       location: '',
       event_type: 'Meetup',
       participants: 0,
-      status: 'upcoming'
+      status: 'upcoming',
+      registration_open: true
     });
     setEditingEvent(null);
     setShowForm(false);
@@ -163,7 +168,8 @@ const EventManagement = () => {
       location: event.location,
       event_type: event.event_type,
       participants: event.participants,
-      status: event.status
+      status: event.status,
+      registration_open: event.registration_open
     });
     setShowForm(true);
   };
@@ -337,6 +343,19 @@ const EventManagement = () => {
                   </Select>
                 </div>
               </div>
+
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  id="registration_open"
+                  checked={formData.registration_open}
+                  onChange={(e) => setFormData({...formData, registration_open: e.target.checked})}
+                  className="w-4 h-4 text-brand-red focus:ring-brand-red border-brand-green/20 rounded"
+                />
+                <label htmlFor="registration_open" className="text-brand-green font-medium cursor-pointer">
+                  Registration Open
+                </label>
+              </div>
               
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4">
                 <Button type="submit" className="bg-brand-red hover:bg-brand-accent-red touch-target" disabled={submitting}>
@@ -380,12 +399,17 @@ const EventManagement = () => {
                   <span>{new Date(event.event_date).toLocaleDateString()}</span>
                   <span>{event.event_time}</span>
                   {event.location && <span className="break-words">{event.location}</span>}
-                    <span className={`px-2 py-1 rounded self-start ${
-                      event.status === 'upcoming' ? 'bg-primary/20 text-primary' :
-                      event.status === 'completed' ? 'bg-secondary/20 text-secondary' :
-                      'bg-destructive/20 text-destructive'
-                    }`}>
+                  <span className={`px-2 py-1 rounded self-start ${
+                    event.status === 'upcoming' ? 'bg-primary/20 text-primary' :
+                    event.status === 'completed' ? 'bg-secondary/20 text-secondary' :
+                    'bg-destructive/20 text-destructive'
+                  }`}>
                     {event.status}
+                  </span>
+                  <span className={`px-2 py-1 rounded self-start ${
+                    event.registration_open ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+                  }`}>
+                    {event.registration_open ? 'Registration Open' : 'Registration Closed'}
                   </span>
                 </div>
               </div>

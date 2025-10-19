@@ -66,7 +66,8 @@ export const eventSchema = z.object({
   status: z
     .enum(['upcoming', 'completed', 'cancelled'], {
       errorMap: () => ({ message: "Please select a valid status" })
-    })
+    }),
+  registration_open: z.boolean().default(true).optional()
 });
 
 // Blog form validation schema

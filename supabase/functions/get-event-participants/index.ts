@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
 
     console.log(`Fetching participants for event: ${eventId}`);
 
-    // Create service role client to bypass RLS
+    // Create service role client to bypass RLS and access auth.users
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
     // Fetch event participants
     const { data: participants, error: participantsError } = await supabaseAdmin
       .from('event_participants')
-      .select('id, event_id, user_id, registered_at, checked_in, check_in_time, notes')
+      .select('id, event_id, user_id, registered_at, checked_in, check_in_time, notes, confirmation_sent')
       .eq('event_id', eventId)
       .order('registered_at', { ascending: false });
 
@@ -69,37 +69,34 @@ Deno.serve(async (req) => {
       throw participantsError;
     }
 
-    // Fetch profiles for all participants
-    const userIds = participants?.map(p => p.user_id) || [];
-    const { data: profiles, error: profilesError } = await supabaseAdmin
-      .from('profiles')
-      .select('user_id, first_name, last_name, phone, bio, email')
-      .in('user_id', userIds);
-
-    if (profilesError) {
-      console.error('Error fetching profiles:', profilesError);
-      throw profilesError;
+    // Fetch user data from auth.users using service role
+    const { data: authUsers, error: authUsersError } = await supabaseAdmin.auth.admin.listUsers();
+    
+    if (authUsersError) {
+      console.error('Error fetching auth users:', authUsersError);
+      throw authUsersError;
     }
 
-    // Combine participants with their profile data
-    const participantsWithProfiles = participants?.map(participant => {
-      const profile = profiles?.find(p => p.user_id === participant.user_id);
+    // Create a map of user data for quick lookup
+    const userMap = new Map(authUsers.users.map(u => [u.id, u]));
+
+    // Combine participants with their auth.users data
+    const participantsWithUserData = participants?.map(participant => {
+      const authUser = userMap.get(participant.user_id);
       return {
         ...participant,
-        profiles: profile ? {
-          first_name: profile.first_name,
-          last_name: profile.last_name,
-          phone: profile.phone,
-          bio: profile.bio,
-        } : null,
-        user_email: profile?.email || 'No email',
+        user_email: authUser?.email || 'No email',
+        user_phone: authUser?.user_metadata?.phone || authUser?.phone || 'No phone',
+        user_name: authUser?.user_metadata?.first_name && authUser?.user_metadata?.last_name
+          ? `${authUser.user_metadata.first_name} ${authUser.user_metadata.last_name}`
+          : authUser?.user_metadata?.name || authUser?.email?.split('@')[0] || 'No name'
       };
     });
 
-    console.log(`Successfully fetched ${participantsWithProfiles?.length || 0} participants`);
+    console.log(`Successfully fetched ${participantsWithUserData?.length || 0} participants`);
 
     return new Response(
-      JSON.stringify({ participants: participantsWithProfiles }),
+      JSON.stringify({ participants: participantsWithUserData }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {

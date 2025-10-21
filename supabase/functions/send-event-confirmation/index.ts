@@ -12,7 +12,9 @@ const corsHeaders = {
 interface EmailRequest {
   participantIds?: string[];
   eventId: string;
-  emailType: 'registration' | 'unregistration';
+  emailType: 'registration' | 'unregistration' | 'custom';
+  customSubject?: string;
+  customMessage?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -54,7 +56,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const { participantIds, eventId, emailType }: EmailRequest = await req.json();
+    const { participantIds, eventId, emailType, customSubject, customMessage }: EmailRequest = await req.json();
 
     // Get event details
     const { data: event, error: eventError } = await supabaseClient
@@ -109,13 +111,19 @@ const handler = async (req: Request): Promise<Response> => {
       const userEmail = authUser.user.email;
       const userName = authUser.user.user_metadata?.first_name || "Participant";
 
-      const subject = emailType === 'registration' 
-        ? `Registration Confirmed: ${event.title}`
-        : `Unregistration Confirmed: ${event.title}`;
+      let subject: string;
+      let htmlContent: string;
 
-      const htmlContent = emailType === 'registration'
-        ? generateRegistrationEmail(event, userName)
-        : generateUnregistrationEmail(event, userName);
+      if (emailType === 'custom') {
+        subject = customSubject || `Update: ${event.title}`;
+        htmlContent = generateCustomEmail(event, userName, customMessage || '');
+      } else if (emailType === 'registration') {
+        subject = `Registration Confirmed: ${event.title}`;
+        htmlContent = generateRegistrationEmail(event, userName);
+      } else {
+        subject = `Unregistration Confirmed: ${event.title}`;
+        htmlContent = generateUnregistrationEmail(event, userName);
+      }
 
       try {
         const emailResponse = await resend.emails.send({
@@ -269,6 +277,50 @@ function generateUnregistrationEmail(event: any, userName: string): string {
           </div>
           <div class="footer">
             <p>This is an automated confirmation email.</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+}
+
+function generateCustomEmail(event: any, userName: string, customMessage: string): string {
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; }
+          .event-details { background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; }
+          .custom-message { white-space: pre-wrap; margin: 20px 0; }
+          .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 style="margin: 0;">${event.title}</h1>
+          </div>
+          <div class="content">
+            <h2>Hello ${userName},</h2>
+            
+            <div class="custom-message">
+              ${customMessage}
+            </div>
+            
+            <div class="event-details">
+              <h3 style="margin-top: 0;">Event Details</h3>
+              <p><strong>Date:</strong> ${new Date(event.event_date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+              <p><strong>Time:</strong> ${event.event_time}</p>
+              <p><strong>Location:</strong> ${event.location}</p>
+            </div>
+          </div>
+          <div class="footer">
+            <p>This email was sent regarding ${event.title}</p>
           </div>
         </div>
       </body>

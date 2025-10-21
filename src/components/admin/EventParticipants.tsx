@@ -6,7 +6,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Search, Download, UserCheck, Mail, Phone, Calendar } from 'lucide-react';
+import { Search, Download, UserCheck, Mail, Phone, Calendar, Edit } from 'lucide-react';
+import { EmailComposer } from './EmailComposer';
 
 interface EventParticipant {
   id: string;
@@ -41,6 +42,7 @@ export function EventParticipants({ eventId }: EventParticipantsProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [sendingEmails, setSendingEmails] = useState(false);
   const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]);
+  const [showEmailComposer, setShowEmailComposer] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -207,16 +209,27 @@ export function EventParticipants({ eventId }: EventParticipantsProps) {
               <span>Confirmations Sent: {participants.filter(p => p.confirmation_sent).length}</span>
             </div>
             <div className="flex flex-wrap gap-2">
+              <Button 
+                onClick={() => setShowEmailComposer(true)} 
+                disabled={participants.length === 0}
+                size="sm"
+                className="touch-target"
+              >
+                <Edit className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Compose Email</span>
+                <span className="sm:hidden">Compose</span>
+              </Button>
               {selectedParticipants.length > 0 && (
                 <Button 
                   onClick={() => handleSendEmails(true)} 
                   disabled={sendingEmails}
+                  variant="outline"
                   size="sm"
                   className="touch-target"
                 >
                   <Mail className="h-4 w-4 mr-2" />
-                  <span className="hidden sm:inline">Send to Selected ({selectedParticipants.length})</span>
-                  <span className="sm:hidden">Selected ({selectedParticipants.length})</span>
+                  <span className="hidden sm:inline">Send Confirmation ({selectedParticipants.length})</span>
+                  <span className="sm:hidden">Confirm ({selectedParticipants.length})</span>
                 </Button>
               )}
               <Button 
@@ -227,7 +240,7 @@ export function EventParticipants({ eventId }: EventParticipantsProps) {
                 className="touch-target"
               >
                 <Mail className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">Send to All</span>
+                <span className="hidden sm:inline">Send All Confirmations</span>
                 <span className="sm:hidden">All</span>
               </Button>
               <Button onClick={exportParticipants} variant="outline" size="sm" className="touch-target">
@@ -348,6 +361,19 @@ export function EventParticipants({ eventId }: EventParticipantsProps) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Email Composer Dialog */}
+      <EmailComposer
+        open={showEmailComposer}
+        onOpenChange={setShowEmailComposer}
+        eventId={eventId}
+        eventTitle={event?.title || 'Event'}
+        selectedParticipantIds={selectedParticipants.length > 0 ? selectedParticipants : undefined}
+        onEmailSent={() => {
+          setSelectedParticipants([]);
+          fetchEventAndParticipants();
+        }}
+      />
     </div>
   );
 }

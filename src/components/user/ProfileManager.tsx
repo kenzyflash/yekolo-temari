@@ -100,16 +100,41 @@ export function ProfileManager() {
 
     setSaving(true);
     try {
-      const { error } = await supabase
+      // First check if profile exists
+      const { data: existingProfile } = await supabase
         .from('profiles')
-        .upsert({
-          user_id: user.id,
-          first_name: formData.firstName,
-          last_name: formData.lastName,
-          phone: formData.phone,
-          bio: formData.bio,
-          updated_at: new Date().toISOString()
-        });
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      let error;
+      if (existingProfile) {
+        // Update existing profile
+        const result = await supabase
+          .from('profiles')
+          .update({
+            first_name: formData.firstName,
+            last_name: formData.lastName,
+            phone: formData.phone,
+            bio: formData.bio,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', user.id);
+        error = result.error;
+      } else {
+        // Insert new profile
+        const result = await supabase
+          .from('profiles')
+          .insert({
+            user_id: user.id,
+            first_name: formData.firstName,
+            last_name: formData.lastName,
+            phone: formData.phone,
+            bio: formData.bio,
+            email: user.email
+          });
+        error = result.error;
+      }
 
       if (error) throw error;
 
@@ -123,7 +148,7 @@ export function ProfileManager() {
       console.error('Error updating profile:', error);
       toast({
         title: "Error",
-        description: "Failed to update profile",
+        description: error.message || "Failed to update profile",
         variant: "destructive",
       });
     } finally {

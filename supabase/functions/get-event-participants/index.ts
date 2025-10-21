@@ -77,19 +77,31 @@ Deno.serve(async (req) => {
       throw authUsersError;
     }
 
-    // Create a map of user data for quick lookup
-    const userMap = new Map(authUsers.users.map(u => [u.id, u]));
+    // Fetch profiles data to get phone numbers and names
+    const { data: profiles, error: profilesError } = await supabaseAdmin
+      .from('profiles')
+      .select('user_id, first_name, last_name, phone');
+    
+    if (profilesError) {
+      console.error('Error fetching profiles:', profilesError);
+    }
 
-    // Combine participants with their auth.users data
+    // Create maps for quick lookup
+    const userMap = new Map(authUsers.users.map(u => [u.id, u]));
+    const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+
+    // Combine participants with their auth.users and profiles data
     const participantsWithUserData = participants?.map(participant => {
       const authUser = userMap.get(participant.user_id);
+      const profile = profileMap.get(participant.user_id);
+      
       return {
         ...participant,
         user_email: authUser?.email || 'No email',
-        user_phone: authUser?.user_metadata?.phone || authUser?.phone || 'No phone',
-        user_name: authUser?.user_metadata?.first_name && authUser?.user_metadata?.last_name
-          ? `${authUser.user_metadata.first_name} ${authUser.user_metadata.last_name}`
-          : authUser?.user_metadata?.name || authUser?.email?.split('@')[0] || 'No name'
+        user_phone: profile?.phone || 'No phone',
+        user_name: profile?.first_name && profile?.last_name
+          ? `${profile.first_name} ${profile.last_name}`
+          : authUser?.email?.split('@')[0] || 'No name'
       };
     });
 

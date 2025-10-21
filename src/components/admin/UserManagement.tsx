@@ -39,34 +39,34 @@ const UserManagement = () => {
 
   const fetchUsers = async () => {
     try {
-      // Fetch users from auth.users (admin query) to get email addresses
-      const { data: authUsersData, error: authError } = await supabase.auth.admin.listUsers();
+      // Fetch all user roles first
+      const { data: userRoles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id, role');
       
-      if (authError) throw authError;
+      if (rolesError) throw rolesError;
 
-      // Fetch user roles and profiles separately
-      const [rolesResponse, profilesResponse] = await Promise.all([
-        supabase.from('user_roles').select('user_id, role'),
-        supabase.from('profiles').select('user_id, first_name, last_name, created_at')
-      ]);
+      if (!userRoles || userRoles.length === 0) {
+        setUsers([]);
+        setLoading(false);
+        return;
+      }
 
-      if (rolesResponse.error) throw rolesResponse.error;
-      if (profilesResponse.error) throw profilesResponse.error;
+      // Get unique user IDs
+      const userIds = [...new Set(userRoles.map(r => r.user_id))];
 
-      const userRoles = rolesResponse.data || [];
-      const profiles = profilesResponse.data || [];
-      const authUsers = authUsersData?.users || [];
+      // Fetch profiles for these users
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('user_id, first_name, last_name, email, created_at')
+        .in('user_id', userIds);
+
+      if (profilesError) {
+        console.warn('Error fetching profiles:', profilesError);
+      }
 
       // Create maps for efficient lookup
-      const profilesMap = new Map();
-      profiles.forEach(profile => {
-        profilesMap.set(profile.user_id, profile);
-      });
-
-      const authUsersMap = new Map();
-      authUsers.forEach(user => {
-        authUsersMap.set(user.id, user);
-      });
+      const profilesMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
 
       // Group roles by user_id and create user objects
       const usersMap = new Map<string, UserWithRole>();
@@ -74,24 +74,31 @@ const UserManagement = () => {
       userRoles.forEach(({ user_id, role }) => {
         if (!usersMap.has(user_id)) {
           const profile = profilesMap.get(user_id);
-          const authUser = authUsersMap.get(user_id);
           const fullName = profile 
             ? [profile.first_name, profile.last_name].filter(Boolean).join(' ')
             : '';
           
           usersMap.set(user_id, {
             id: user_id,
-            email: authUser?.email || `user-${user_id.slice(0, 8)}@unknown.com`, // Use actual email
-            displayName: fullName || authUser?.email || `User ${user_id.slice(0, 8)}`, // Add display name field
-            created_at: profile?.created_at || authUser?.created_at || new Date().toISOString(),
-            last_sign_in_at: authUser?.last_sign_in_at || new Date().toISOString(),
+            email: profile?.email || `user-${user_id.slice(0, 8)}@unknown.com`,
+            displayName: fullName || profile?.email || `User ${user_id.slice(0, 8)}`,
+            created_at: profile?.created_at || new Date().toISOString(),
+            last_sign_in_at: new Date().toISOString(),
             roles: []
           });
         }
         usersMap.get(user_id)!.roles.push(role);
       });
 
-      setUsers(Array.from(usersMap.values()));
+      const usersList = Array.from(usersMap.values());
+      setUsers(usersList);
+      
+      if (usersList.length === 0) {
+        toast({
+          title: "No Users Found",
+          description: "No users with roles found in the system.",
+        });
+      }
     } catch (error: any) {
       console.error('Error fetching users:', error);
       toast({

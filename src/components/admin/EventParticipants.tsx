@@ -39,6 +39,8 @@ export function EventParticipants({ eventId }: EventParticipantsProps) {
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [sendingEmails, setSendingEmails] = useState(false);
+  const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -123,6 +125,56 @@ export function EventParticipants({ eventId }: EventParticipantsProps) {
     window.URL.revokeObjectURL(url);
   };
 
+  const handleSendEmails = async (selected: boolean = false) => {
+    setSendingEmails(true);
+    try {
+      const participantIds = selected ? selectedParticipants : undefined;
+
+      const { data, error } = await supabase.functions.invoke('send-event-confirmation', {
+        body: {
+          eventId,
+          participantIds,
+          emailType: 'registration'
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: data.message || 'Confirmation emails sent successfully!',
+      });
+      
+      setSelectedParticipants([]);
+      await fetchEventAndParticipants();
+    } catch (error: any) {
+      console.error('Error sending emails:', error);
+      toast({
+        title: "Error",
+        description: error.message || 'Failed to send confirmation emails',
+        variant: "destructive",
+      });
+    } finally {
+      setSendingEmails(false);
+    }
+  };
+
+  const toggleSelectParticipant = (participantId: string) => {
+    setSelectedParticipants(prev =>
+      prev.includes(participantId)
+        ? prev.filter(id => id !== participantId)
+        : [...prev, participantId]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedParticipants.length === filteredParticipants.length) {
+      setSelectedParticipants([]);
+    } else {
+      setSelectedParticipants(filteredParticipants.map(p => p.id));
+    }
+  };
+
   const filteredParticipants = participants.filter(participant => {
     const search = searchTerm.toLowerCase();
     return participant.user_name.toLowerCase().includes(search) || 
@@ -154,7 +206,30 @@ export function EventParticipants({ eventId }: EventParticipantsProps) {
               <span>Checked In: {participants.filter(p => p.checked_in).length}</span>
               <span>Confirmations Sent: {participants.filter(p => p.confirmation_sent).length}</span>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
+              {selectedParticipants.length > 0 && (
+                <Button 
+                  onClick={() => handleSendEmails(true)} 
+                  disabled={sendingEmails}
+                  size="sm"
+                  className="touch-target"
+                >
+                  <Mail className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Send to Selected ({selectedParticipants.length})</span>
+                  <span className="sm:hidden">Selected ({selectedParticipants.length})</span>
+                </Button>
+              )}
+              <Button 
+                onClick={() => handleSendEmails(false)} 
+                disabled={sendingEmails || participants.length === 0}
+                variant="outline"
+                size="sm"
+                className="touch-target"
+              >
+                <Mail className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Send to All</span>
+                <span className="sm:hidden">All</span>
+              </Button>
               <Button onClick={exportParticipants} variant="outline" size="sm" className="touch-target">
                 <Download className="h-4 w-4 mr-2" />
                 <span className="hidden sm:inline">Export </span>CSV
@@ -184,6 +259,14 @@ export function EventParticipants({ eventId }: EventParticipantsProps) {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-[50px]">
+                    <input
+                      type="checkbox"
+                      checked={selectedParticipants.length === filteredParticipants.length && filteredParticipants.length > 0}
+                      onChange={toggleSelectAll}
+                      className="rounded cursor-pointer"
+                    />
+                  </TableHead>
                   <TableHead className="min-w-[150px]">Name</TableHead>
                   <TableHead className="min-w-[200px]">Email</TableHead>
                   <TableHead className="min-w-[120px] hidden sm:table-cell">Phone</TableHead>
@@ -195,6 +278,14 @@ export function EventParticipants({ eventId }: EventParticipantsProps) {
               <TableBody>
                 {filteredParticipants.map((participant) => (
                   <TableRow key={participant.id}>
+                    <TableCell>
+                      <input
+                        type="checkbox"
+                        checked={selectedParticipants.includes(participant.id)}
+                        onChange={() => toggleSelectParticipant(participant.id)}
+                        className="rounded cursor-pointer"
+                      />
+                    </TableCell>
                     <TableCell className="font-medium">
                       <div className="break-words">{participant.user_name}</div>
                     </TableCell>
@@ -247,7 +338,7 @@ export function EventParticipants({ eventId }: EventParticipantsProps) {
                 ))}
                 {filteredParticipants.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground text-sm">
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground text-sm">
                       {searchTerm ? 'No participants found matching your search.' : 'No participants registered yet.'}
                     </TableCell>
                   </TableRow>

@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.3";
 import { Resend } from "npm:resend@4.0.0";
+import { z } from "npm:zod@3.23.8";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -9,12 +10,33 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Input validation schema
+const EmailRequestSchema = z.object({
+  participantIds: z.array(z.string().uuid()).optional(),
+  eventId: z.string().uuid(),
+  emailType: z.enum(['registration', 'unregistration', 'custom']),
+  customSubject: z.string().trim().min(1).max(200).optional(),
+  customMessage: z.string().trim().min(1).max(5000).optional(),
+});
+
 interface EmailRequest {
   participantIds?: string[];
   eventId: string;
   emailType: 'registration' | 'unregistration' | 'custom';
   customSubject?: string;
   customMessage?: string;
+}
+
+// HTML escape function to prevent XSS
+function escapeHtml(text: string): string {
+  const map: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  };
+  return text.replace(/[&<>"']/g, (char) => map[char]);
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -56,7 +78,22 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const { participantIds, eventId, emailType, customSubject, customMessage }: EmailRequest = await req.json();
+    const requestBody = await req.json();
+    
+    // Validate input
+    const validationResult = EmailRequestSchema.safeParse(requestBody);
+    if (!validationResult.success) {
+      console.error("Validation error:", validationResult.error);
+      return new Response(
+        JSON.stringify({ 
+          error: "Invalid input", 
+          details: validationResult.error.errors 
+        }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const { participantIds, eventId, emailType, customSubject, customMessage }: EmailRequest = validationResult.data;
 
     // Get event details
     const { data: event, error: eventError } = await supabaseClient
@@ -285,6 +322,9 @@ function generateUnregistrationEmail(event: any, userName: string): string {
 }
 
 function generateCustomEmail(event: any, userName: string, customMessage: string): string {
+  // Escape HTML to prevent XSS - preserve line breaks
+  const escapedMessage = escapeHtml(customMessage).replace(/\n/g, '<br>');
+  
   return `
     <!DOCTYPE html>
     <html>
@@ -296,31 +336,31 @@ function generateCustomEmail(event: any, userName: string, customMessage: string
           .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
           .content { background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; }
           .event-details { background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; }
-          .custom-message { white-space: pre-wrap; margin: 20px 0; }
+          .custom-message { margin: 20px 0; line-height: 1.8; }
           .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
         </style>
       </head>
       <body>
         <div class="container">
           <div class="header">
-            <h1 style="margin: 0;">${event.title}</h1>
+            <h1 style="margin: 0;">${escapeHtml(event.title)}</h1>
           </div>
           <div class="content">
-            <h2>Hello ${userName},</h2>
+            <h2>Hello ${escapeHtml(userName)},</h2>
             
             <div class="custom-message">
-              ${customMessage}
+              ${escapedMessage}
             </div>
             
             <div class="event-details">
               <h3 style="margin-top: 0;">Event Details</h3>
               <p><strong>Date:</strong> ${new Date(event.event_date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-              <p><strong>Time:</strong> ${event.event_time}</p>
-              <p><strong>Location:</strong> ${event.location}</p>
+              <p><strong>Time:</strong> ${escapeHtml(event.event_time)}</p>
+              <p><strong>Location:</strong> ${escapeHtml(event.location)}</p>
             </div>
           </div>
           <div class="footer">
-            <p>This email was sent regarding ${event.title}</p>
+            <p>This email was sent regarding ${escapeHtml(event.title)}</p>
           </div>
         </div>
       </body>

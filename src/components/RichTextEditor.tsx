@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Bold, Italic, List, ListOrdered, Image, Save, X, Plus } from 'lucide-react';
 import ImageUpload from '@/components/ImageUpload';
-import { blogPostSchema, type BlogPostInput } from '@/lib/validation';
+import { blogSchema, type BlogFormData } from '@/lib/validation-schemas';
 
 interface RichTextEditorProps {
   blogId?: string;
@@ -162,7 +162,7 @@ const RichTextEditor = ({ blogId, onClose, onSave }: RichTextEditorProps) => {
 
     // Validate input data
     try {
-      blogPostSchema.parse({ ...blogData, status });
+      blogSchema.parse({ ...blogData, status });
     } catch (error: any) {
       const errorMessage = error.errors?.[0]?.message || 'Invalid input data';
       toast({

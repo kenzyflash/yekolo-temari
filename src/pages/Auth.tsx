@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { authSchema, type AuthFormData } from '@/lib/validation-schemas';
+import { authSchema, signInSchema, type AuthFormData, type SignInFormData } from '@/lib/validation-schemas';
 import Navigation from '@/components/Navigation';
 import MatrixRain from '@/components/MatrixRain';
 import Footer from '@/components/Footer';
@@ -47,29 +47,18 @@ const Auth = () => {
 
   const validateSignIn = () => {
     try {
-      // Manual validation for sign in (just email and password)
-      const errors: Partial<Record<keyof AuthFormData, string>> = {};
-      
-      if (!formData.email || !formData.email.trim()) {
-        errors.email = "Email is required";
-      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-        errors.email = "Invalid email address";
-      }
-      
-      if (!formData.password) {
-        errors.password = "Password is required";
-      } else if (formData.password.length < 8) {
-        errors.password = "Password must be at least 8 characters";
-      }
-      
-      if (Object.keys(errors).length > 0) {
-        setErrors(errors);
-        return false;
-      }
-      
+      signInSchema.parse({ 
+        email: formData.email, 
+        password: formData.password 
+      });
       setErrors({});
       return true;
     } catch (error: any) {
+      const fieldErrors: Partial<Record<keyof AuthFormData, string>> = {};
+      error.errors.forEach((err: any) => {
+        fieldErrors[err.path[0] as keyof AuthFormData] = err.message;
+      });
+      setErrors(fieldErrors);
       return false;
     }
   };

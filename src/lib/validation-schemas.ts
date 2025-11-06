@@ -1,7 +1,10 @@
 import { z } from 'zod';
 
-// Re-export for backwards compatibility
-export { blogSchema as blogPostSchema } from './validation-schemas';
+// Sign-in validation schema (simpler than full auth)
+export const signInSchema = z.object({
+  email: z.string().trim().email('Invalid email address').max(254, 'Email must be less than 254 characters'),
+  password: z.string().min(8, 'Password must be at least 8 characters')
+});
 
 // Contact form validation schema
 export const contactSchema = z.object({
@@ -199,6 +202,7 @@ export const profileSchema = z.object({
 });
 
 // Type exports
+export type SignInFormData = z.infer<typeof signInSchema>;
 export type ContactFormData = z.infer<typeof contactSchema>;
 export type EventFormData = z.infer<typeof eventSchema>;
 export type BlogFormData = z.infer<typeof blogSchema>;

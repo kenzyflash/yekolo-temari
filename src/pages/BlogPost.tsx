@@ -11,7 +11,7 @@ import BlogEditor from '@/components/BlogEditor';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import ReactMarkdown from 'react-markdown';
-import DOMPurify from 'dompurify';
+
 
 interface BlogPost {
   id: string;
@@ -87,15 +87,6 @@ const BlogPost = () => {
 
   const handleSavePost = () => {
     fetchPost();
-  };
-
-  // Secure content sanitization function
-  const sanitizeContent = (content: string) => {
-    return DOMPurify.sanitize(content, {
-      ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'img', 'a', 'code', 'pre'],
-      ALLOWED_ATTR: ['src', 'alt', 'href', 'class', 'target'],
-      ALLOW_DATA_ATTR: false
-    });
   };
 
   if (loading) {
@@ -199,6 +190,9 @@ const BlogPost = () => {
               {/* Content with secure markdown rendering */}
               <div className="prose prose-invert prose-lg max-w-none text-white">
                 <ReactMarkdown
+                  skipHtml={true}
+                  disallowedElements={['script', 'iframe', 'object', 'embed', 'style']}
+                  unwrapDisallowed={true}
                   components={{
                     img: ({ src, alt }) => (
                       <img 

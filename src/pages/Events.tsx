@@ -110,14 +110,29 @@ const Events = () => {
       return;
     }
 
+    // Check rate limit for event registrations
+    const { formRateLimiters } = await import('@/lib/rateLimiter');
+    const rateLimitCheck = formRateLimiters.eventRegistration.check();
+    if (!rateLimitCheck.allowed) {
+      toast({
+        title: "Too Many Registration Attempts",
+        description: rateLimitCheck.message || "Please try again later",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setProcessingRegistration(eventId);
 
     try {
+      const { formRateLimiters } = await import('@/lib/rateLimiter');
+      
       if (isRegistered) {
         // Unregister using helper function
         const result = await unregisterFromEvent(eventId, user.id);
         
         if (!result.success) {
+          formRateLimiters.eventRegistration.recordAttempt();
           toast({
             title: "Error",
             description: result.error || "Failed to unregister from event",
@@ -126,6 +141,7 @@ const Events = () => {
           return;
         }
         
+        formRateLimiters.eventRegistration.recordSuccess();
         setRegisteredEvents(prev => {
           const newSet = new Set(prev);
           newSet.delete(eventId);
@@ -141,6 +157,7 @@ const Events = () => {
         const result = await registerForEvent(eventId, user.id, MAX_EVENT_CAPACITY);
         
         if (!result.success) {
+          formRateLimiters.eventRegistration.recordAttempt();
           toast({
             title: "Registration Failed",
             description: result.error || "Failed to register for event",
@@ -149,6 +166,7 @@ const Events = () => {
           return;
         }
         
+        formRateLimiters.eventRegistration.recordSuccess();
         setRegisteredEvents(prev => new Set([...prev, eventId]));
         
         toast({

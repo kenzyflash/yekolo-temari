@@ -160,6 +160,20 @@ const RichTextEditor = ({ blogId, onClose, onSave }: RichTextEditorProps) => {
       return;
     }
 
+    // Check rate limit for blog submissions (only for new submissions, not drafts)
+    if (status === 'pending' && !blogId) {
+      const { formRateLimiters } = await import('@/lib/rateLimiter');
+      const rateLimitCheck = formRateLimiters.blogSubmission.check();
+      if (!rateLimitCheck.allowed) {
+        toast({
+          title: "Too Many Submissions",
+          description: rateLimitCheck.message || "Please try again later",
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+
     // Validate input data
     try {
       blogSchema.parse({ ...blogData, status });
@@ -200,6 +214,12 @@ const RichTextEditor = ({ blogId, onClose, onSave }: RichTextEditorProps) => {
         if (error) throw error;
       }
 
+      // Record successful submission for rate limiting
+      if (status === 'pending' && !blogId) {
+        const { formRateLimiters } = await import('@/lib/rateLimiter');
+        formRateLimiters.blogSubmission.recordSuccess();
+      }
+
       toast({
         title: "Success",
         description: `Blog ${status === 'draft' ? 'saved as draft' : status === 'pending' ? 'submitted for review' : 'saved'} successfully`
@@ -208,6 +228,12 @@ const RichTextEditor = ({ blogId, onClose, onSave }: RichTextEditorProps) => {
       onSave();
       onClose();
     } catch (error: any) {
+      // Record failed attempt for rate limiting
+      if (status === 'pending' && !blogId) {
+        const { formRateLimiters } = await import('@/lib/rateLimiter');
+        formRateLimiters.blogSubmission.recordAttempt();
+      }
+      
       toast({
         title: "Error",
         description: error.message,

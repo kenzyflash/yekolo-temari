@@ -161,5 +161,15 @@ export const formRateLimiters = {
     maxAttempts: 3,
     windowMs: 60 * 60 * 1000, // 1 hour
     lockoutMs: 60 * 60 * 1000  // 1 hour lockout
+  }),
+  eventRegistration: new RateLimiter('form_event_registration', {
+    maxAttempts: 10,
+    windowMs: 60 * 60 * 1000, // 1 hour
+    lockoutMs: 30 * 60 * 1000  // 30 minute lockout
+  }),
+  blogSubmission: new RateLimiter('form_blog_submission', {
+    maxAttempts: 5,
+    windowMs: 24 * 60 * 60 * 1000, // 24 hours
+    lockoutMs: 60 * 60 * 1000  // 1 hour lockout
   })
 };

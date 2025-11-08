@@ -17,6 +17,21 @@
     <meta name="twitter:site" content="@yekolo_temari" />
     <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
     
+    <!-- Content Security Policy for XSS protection -->
+    <meta http-equiv="Content-Security-Policy" content="
+      default-src 'self';
+      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://mdwdnwgqnditzvwehdsk.supabase.co;
+      style-src 'self' 'unsafe-inline';
+      img-src 'self' data: https: blob:;
+      font-src 'self' data:;
+      connect-src 'self' https://mdwdnwgqnditzvwehdsk.supabase.co wss://mdwdnwgqnditzvwehdsk.supabase.co https://*.supabase.co wss://*.supabase.co;
+      frame-src 'none';
+      object-src 'none';
+      base-uri 'self';
+      form-action 'self';
+      upgrade-insecure-requests;
+    ">
+    
     <link rel="icon" href="/lovable-uploads/b0a82a80-d078-4caf-92be-cca56b1efd1e.png" type="image/png">
   </head>
 

@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { blogSchema } from '@/lib/validation-schemas';
-import DOMPurify from 'dompurify';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -91,19 +90,6 @@ const BlogManagement = () => {
           });
           return;
         }
-
-        // Sanitize content before publishing
-        const sanitizedContent = DOMPurify.sanitize(blog.content, {
-          ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'h1', 'h2', 'h3', 'ul', 'ol', 'li', 'a', 'img', 'code', 'pre'],
-          ALLOWED_ATTR: ['href', 'src', 'alt', 'class']
-        });
-
-        const { error: updateContentError } = await supabase
-          .from('blogs')
-          .update({ content: sanitizedContent })
-          .eq('id', blogId);
-
-        if (updateContentError) throw updateContentError;
       }
 
       const { error } = await supabase

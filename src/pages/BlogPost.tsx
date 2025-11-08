@@ -44,6 +44,8 @@ const BlogPost = () => {
 
   const fetchPost = async () => {
     try {
+      // Note: author_id is selected for edit permission checks
+      // but should not be displayed publicly (use author_name instead)
       const { data, error } = await supabase
         .from('blogs')
         .select('*')

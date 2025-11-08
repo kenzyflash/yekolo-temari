@@ -50,6 +50,8 @@ const Blog = () => {
 
   const fetchPosts = async () => {
     try {
+      // Note: author_id is selected for edit permission checks
+      // but should not be displayed in public contexts (use author_name instead)
       const { data, error } = await supabase
         .from('blogs')
         .select('*')

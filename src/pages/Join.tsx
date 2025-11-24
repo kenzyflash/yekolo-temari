@@ -45,7 +45,7 @@ const Join = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Check rate limit
+    // Client-side rate limit check
     const { formRateLimiters } = await import('@/lib/rateLimiter');
     const rateLimitCheck = formRateLimiters.contact.check();
     if (!rateLimitCheck.allowed) {
@@ -62,18 +62,28 @@ const Join = () => {
       const validatedData = contactSchema.parse(formData);
       setIsSubmitting(true);
       
-      const { error } = await supabase
-        .from('contact_messages')
-        .insert({
+      // Use edge function with IP-based rate limiting
+      const { data, error } = await supabase.functions.invoke('submit-contact', {
+        body: {
           name: validatedData.name,
           email: validatedData.email,
           message: validatedData.message || null,
           interests: validatedData.interests || [],
           user_id: user?.id || null
-        });
+        }
+      });
 
       if (error) {
         formRateLimiters.contact.recordAttempt();
+        // Handle rate limit error from backend
+        if (error.message?.includes('Rate limit') || error.message?.includes('Too many')) {
+          toast({
+            title: "Too Many Attempts",
+            description: "Please try again later. Our system detected unusual activity from your connection.",
+            variant: "destructive"
+          });
+          return;
+        }
         throw error;
       }
 

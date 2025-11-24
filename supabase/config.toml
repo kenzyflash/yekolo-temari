@@ -5,3 +5,9 @@ verify_jwt = true
 
 [functions.send-event-confirmation]
 verify_jwt = true
+
+[functions.submit-contact]
+verify_jwt = false
+
+[functions.register-event]
+verify_jwt = true

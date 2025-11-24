@@ -7,7 +7,7 @@ export interface EventRegistrationResult {
 }
 
 /**
- * Register user for an event with proper concurrency handling
+ * Register user for an event with IP-based rate limiting via edge function
  */
 export async function registerForEvent(
   eventId: string, 
@@ -15,80 +15,24 @@ export async function registerForEvent(
   maxCapacity: number = 100
 ): Promise<EventRegistrationResult> {
   try {
-    // Check if user is already registered
-    const { data: existingRegistration, error: checkError } = await supabase
-      .from('event_participants')
-      .select('id')
-      .eq('event_id', eventId)
-      .eq('user_id', userId)
-      .maybeSingle();
-
-    if (checkError) {
-      return { success: false, error: checkError.message };
-    }
-
-    if (existingRegistration) {
-      return { success: false, error: 'You are already registered for this event' };
-    }
-
-    // Get current event details including registration status
-    const { data: event, error: eventError } = await supabase
-      .from('events')
-      .select('participants, registration_open, status')
-      .eq('id', eventId)
-      .single();
-
-    if (eventError) {
-      return { success: false, error: eventError.message };
-    }
-
-    // Check if registration is open
-    if (!event.registration_open) {
-      return { success: false, error: 'Registration for this event is currently closed' };
-    }
-
-    // Check if event is upcoming
-    if (event.status !== 'upcoming') {
-      return { success: false, error: 'Registration is only available for upcoming events' };
-    }
-
-    // Check capacity
-    if (event.participants >= maxCapacity) {
-      return { success: false, error: 'Event is full. Registration capacity reached.' };
-    }
-
-    // Register user
-    const { error: insertError } = await supabase
-      .from('event_participants')
-      .insert({
+    // Use edge function with IP-based rate limiting
+    const { data, error } = await supabase.functions.invoke('register-event', {
+      body: {
         event_id: eventId,
         user_id: userId,
-        registered_at: new Date().toISOString()
-      });
-
-    if (insertError) {
-      // Handle unique constraint violation
-      if (insertError.code === '23505') {
-        return { success: false, error: 'You are already registered for this event' };
+        action: 'register'
       }
-      return { success: false, error: insertError.message };
-    }
+    });
 
-    // Increment participant count
-    const { error: updateError } = await supabase
-      .from('events')
-      .update({ participants: event.participants + 1 })
-      .eq('id', eventId);
-
-    if (updateError) {
-      // Rollback registration if count update fails
-      await supabase
-        .from('event_participants')
-        .delete()
-        .eq('event_id', eventId)
-        .eq('user_id', userId);
-      
-      return { success: false, error: 'Failed to update participant count. Please try again.' };
+    if (error) {
+      // Handle rate limit errors
+      if (error.message?.includes('Rate limit') || error.message?.includes('Too many')) {
+        return { 
+          success: false, 
+          error: 'Too many registration attempts. Please try again later.' 
+        };
+      }
+      return { success: false, error: error.message };
     }
 
     return { 
@@ -104,58 +48,31 @@ export async function registerForEvent(
 }
 
 /**
- * Unregister user from an event
+ * Unregister user from an event with IP-based rate limiting via edge function
  */
 export async function unregisterFromEvent(
   eventId: string, 
   userId: string
 ): Promise<EventRegistrationResult> {
   try {
-    // Check if user is registered
-    const { data: registration, error: checkError } = await supabase
-      .from('event_participants')
-      .select('id')
-      .eq('event_id', eventId)
-      .eq('user_id', userId)
-      .maybeSingle();
+    // Use edge function with IP-based rate limiting
+    const { data, error } = await supabase.functions.invoke('register-event', {
+      body: {
+        event_id: eventId,
+        user_id: userId,
+        action: 'unregister'
+      }
+    });
 
-    if (checkError) {
-      return { success: false, error: checkError.message };
-    }
-
-    if (!registration) {
-      return { success: false, error: 'You are not registered for this event' };
-    }
-
-    // Delete registration
-    const { error: deleteError } = await supabase
-      .from('event_participants')
-      .delete()
-      .eq('event_id', eventId)
-      .eq('user_id', userId);
-
-    if (deleteError) {
-      return { success: false, error: deleteError.message };
-    }
-
-    // Decrement participant count
-    const { data: event, error: eventError } = await supabase
-      .from('events')
-      .select('participants')
-      .eq('id', eventId)
-      .single();
-
-    if (eventError) {
-      return { success: false, error: eventError.message };
-    }
-
-    const { error: updateError } = await supabase
-      .from('events')
-      .update({ participants: Math.max(0, event.participants - 1) })
-      .eq('id', eventId);
-
-    if (updateError) {
-      return { success: false, error: updateError.message };
+    if (error) {
+      // Handle rate limit errors
+      if (error.message?.includes('Rate limit') || error.message?.includes('Too many')) {
+        return { 
+          success: false, 
+          error: 'Too many attempts. Please try again later.' 
+        };
+      }
+      return { success: false, error: error.message };
     }
 
     return { 

@@ -10,7 +10,8 @@ import EventManagement from '@/components/admin/EventManagement';
 import ProjectManagement from '@/components/admin/ProjectManagement';
 import UserManagement from '@/components/admin/UserManagement';
 import ContactMessageManagement from '@/components/admin/ContactMessageManagement';
-import { Settings, BookOpen, Calendar, FolderOpen, Users, Shield, Mail } from 'lucide-react';
+import EmailManagement from '@/components/admin/EmailManagement';
+import { Settings, BookOpen, Calendar, FolderOpen, Users, Shield, Mail, Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 
@@ -26,7 +27,8 @@ const Admin = () => {
     events: 0,
     projects: 0,
     users: 0,
-    messages: 0
+    messages: 0,
+    emails: 0
   });
 
   useEffect(() => {
@@ -44,12 +46,13 @@ const Admin = () => {
 
   const fetchStats = async () => {
     try {
-      const [blogsRes, eventsRes, projectsRes, usersRes, messagesRes] = await Promise.all([
+      const [blogsRes, eventsRes, projectsRes, usersRes, messagesRes, emailsRes] = await Promise.all([
         supabase.from('blogs').select('id', { count: 'exact', head: true }),
         supabase.from('events').select('id', { count: 'exact', head: true }),
         supabase.from('projects').select('id', { count: 'exact', head: true }),
         supabase.from('user_roles').select('id', { count: 'exact', head: true }),
-        supabase.from('contact_messages').select('id', { count: 'exact', head: true })
+        supabase.from('contact_messages').select('id', { count: 'exact', head: true }),
+        supabase.from('email_logs').select('id', { count: 'exact', head: true })
       ]);
 
       setStats({
@@ -57,7 +60,8 @@ const Admin = () => {
         events: eventsRes.count || 0,
         projects: projectsRes.count || 0,
         users: usersRes.count || 0,
-        messages: messagesRes.count || 0
+        messages: messagesRes.count || 0,
+        emails: emailsRes.count || 0
       });
     } catch (error: any) {
       console.error('Error fetching stats:', error);
@@ -126,7 +130,8 @@ const Admin = () => {
     { id: 'events', name: 'Events', icon: Calendar, count: stats.events },
     { id: 'projects', name: 'Projects', icon: FolderOpen, count: stats.projects },
     { id: 'users', name: 'Users', icon: Users, count: stats.users },
-    { id: 'messages', name: 'Messages', icon: Mail, count: stats.messages }
+    { id: 'messages', name: 'Messages', icon: Mail, count: stats.messages },
+    { id: 'email', name: 'Email', icon: Send, count: stats.emails }
   ];
 
   return (
@@ -225,6 +230,7 @@ const Admin = () => {
               {activeTab === 'projects' && <ProjectManagement />}
               {activeTab === 'users' && <UserManagement />}
               {activeTab === 'messages' && <ContactMessageManagement />}
+              {activeTab === 'email' && <EmailManagement />}
             </div>
           </div>
         </div>

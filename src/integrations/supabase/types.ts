@@ -137,6 +137,54 @@ export type Database = {
         }
         Relationships: []
       }
+      email_logs: {
+        Row: {
+          created_at: string | null
+          email_type: string
+          error_details: Json | null
+          failure_count: number | null
+          id: string
+          message: string
+          recipient_emails: string[]
+          recipient_ids: string[]
+          sender_id: string
+          sent_at: string | null
+          status: string
+          subject: string
+          success_count: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          email_type?: string
+          error_details?: Json | null
+          failure_count?: number | null
+          id?: string
+          message: string
+          recipient_emails: string[]
+          recipient_ids: string[]
+          sender_id: string
+          sent_at?: string | null
+          status?: string
+          subject: string
+          success_count?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          email_type?: string
+          error_details?: Json | null
+          failure_count?: number | null
+          id?: string
+          message?: string
+          recipient_emails?: string[]
+          recipient_ids?: string[]
+          sender_id?: string
+          sent_at?: string | null
+          status?: string
+          subject?: string
+          success_count?: number | null
+        }
+        Relationships: []
+      }
       event_participants: {
         Row: {
           check_in_time: string | null

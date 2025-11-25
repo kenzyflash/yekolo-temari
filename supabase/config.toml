@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.register-event]
 verify_jwt = true
+
+[functions.send-admin-email]
+verify_jwt = true

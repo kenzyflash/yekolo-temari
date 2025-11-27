@@ -11,7 +11,8 @@ import ProjectManagement from '@/components/admin/ProjectManagement';
 import UserManagement from '@/components/admin/UserManagement';
 import ContactMessageManagement from '@/components/admin/ContactMessageManagement';
 import EmailManagement from '@/components/admin/EmailManagement';
-import { Settings, BookOpen, Calendar, FolderOpen, Users, Shield, Mail, Send } from 'lucide-react';
+import { Settings, BookOpen, Calendar, FolderOpen, Users, Shield, Mail, Send, BarChart3 } from 'lucide-react';
+import AdminAnalytics from '@/components/admin/AdminAnalytics';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 
@@ -21,7 +22,7 @@ const Admin = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  const [activeTab, setActiveTab] = useState('blogs');
+  const [activeTab, setActiveTab] = useState('analytics');
   const [stats, setStats] = useState({
     blogs: 0,
     events: 0,
@@ -126,6 +127,7 @@ const Admin = () => {
   }
 
   const tabs = [
+    { id: 'analytics', name: 'Analytics', icon: BarChart3, count: null },
     { id: 'blogs', name: 'Blogs', icon: BookOpen, count: stats.blogs },
     { id: 'events', name: 'Events', icon: Calendar, count: stats.events },
     { id: 'projects', name: 'Projects', icon: FolderOpen, count: stats.projects },
@@ -206,9 +208,11 @@ const Admin = () => {
                 >
                   <Icon size={18} />
                   <span>{tab.name}</span>
-                  <span className="bg-brand-green/20 text-brand-green px-2 py-1 rounded-full text-xs">
-                    {tab.count}
-                  </span>
+                  {tab.count !== null && (
+                    <span className="bg-brand-green/20 text-brand-green px-2 py-1 rounded-full text-xs">
+                      {tab.count}
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -225,6 +229,7 @@ const Admin = () => {
             </div>
             
             <div className="p-6">
+              {activeTab === 'analytics' && <AdminAnalytics />}
               {activeTab === 'blogs' && <BlogManagement />}
               {activeTab === 'events' && <EventManagement />}
               {activeTab === 'projects' && <ProjectManagement />}

@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserRoles } from '@/hooks/useUserRoles';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
+import AdminNotificationBell from '@/components/admin/AdminNotificationBell';
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -90,6 +91,7 @@ const Navigation = () => {
             {/* Auth buttons */}
             {user ? (
               <div className="flex items-center space-x-1 xl:space-x-2 ml-2 xl:ml-4">
+                {isAdmin() && <AdminNotificationBell />}
                 <Link
                   to={isAdmin() ? "/admin" : "/dashboard"}
                   className="text-brand-green hover:bg-brand-red/20 hover:text-white px-2 xl:px-4 py-2 rounded-lg transition-all duration-300 text-sm xl:text-base touch-target"

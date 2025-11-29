@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, memo, useCallback } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, Terminal, Shield, Code, Calendar, Users, Github, MessageCircle, LogOut } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -8,7 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import AdminNotificationBell from '@/components/admin/AdminNotificationBell';
 
-const Navigation = () => {
+const Navigation = memo(() => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -27,7 +26,7 @@ const Navigation = () => {
 
   const isActive = (path: string) => location.pathname === path;
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     try {
       const { error } = await signOut();
       if (error) {
@@ -50,7 +49,7 @@ const Navigation = () => {
         variant: "destructive"
       });
     }
-  };
+  }, [signOut, toast, navigate]);
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-brand-darker/95 backdrop-blur-sm border-b border-brand-green/20">
@@ -62,6 +61,8 @@ const Navigation = () => {
               src="/lovable-uploads/b0a82a80-d078-4caf-92be-cca56b1efd1e.png" 
               alt="Yekolo Temari Logo" 
               className="h-8 sm:h-10 w-auto filter brightness-0 invert"
+              loading="eager"
+              decoding="async"
             />
             <span className="text-lg sm:text-xl font-bold text-brand-green glow-text hidden xs:block">
               Yekolo Temari
@@ -198,6 +199,8 @@ const Navigation = () => {
       </div>
     </nav>
   );
-};
+});
+
+Navigation.displayName = 'Navigation';
 
 export default Navigation;

@@ -1,11 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.3';
 import { EdgeRateLimiter } from '../_shared/rateLimiter.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { secureJsonResponse, corsPreflightResponse, getResponseHeaders } from '../_shared/securityHeaders.ts';
 
 // Rate limiter: 3 attempts per hour
 const rateLimiter = new EdgeRateLimiter('contact_form', {
@@ -25,7 +21,7 @@ interface ContactRequest {
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return corsPreflightResponse();
   }
 
   try {
@@ -33,15 +29,9 @@ const handler = async (req: Request): Promise<Response> => {
     const rateLimitCheck = await rateLimiter.check(req);
     if (!rateLimitCheck.allowed) {
       console.log('Rate limit exceeded for contact form');
-      return new Response(
-        JSON.stringify({ 
-          error: rateLimitCheck.message || 'Too many requests',
-          retryAfter: rateLimitCheck.retryAfter 
-        }),
-        {
-          status: 429,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
+      return secureJsonResponse(
+        { error: rateLimitCheck.message || 'Too many requests', retryAfter: rateLimitCheck.retryAfter },
+        429
       );
     }
 
@@ -50,35 +40,17 @@ const handler = async (req: Request): Promise<Response> => {
     // Validate input
     if (!name || name.trim().length === 0 || name.length > 100) {
       await rateLimiter.recordAttempt(req);
-      return new Response(
-        JSON.stringify({ error: 'Invalid name' }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
+      return secureJsonResponse({ error: 'Invalid name' }, 400);
     }
 
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 255) {
       await rateLimiter.recordAttempt(req);
-      return new Response(
-        JSON.stringify({ error: 'Invalid email' }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
+      return secureJsonResponse({ error: 'Invalid email' }, 400);
     }
 
     if (message && message.length > 1000) {
       await rateLimiter.recordAttempt(req);
-      return new Response(
-        JSON.stringify({ error: 'Message too long' }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
+      return secureJsonResponse({ error: 'Message too long' }, 400);
     }
 
     // Create Supabase client
@@ -103,38 +75,19 @@ const handler = async (req: Request): Promise<Response> => {
     if (error) {
       console.error('Error inserting contact message:', error);
       await rateLimiter.recordAttempt(req);
-      return new Response(
-        JSON.stringify({ error: 'Failed to submit contact form' }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
+      return secureJsonResponse({ error: 'Failed to submit contact form' }, 500);
     }
 
     // Clear rate limit on success
     await rateLimiter.recordSuccess(req);
 
     console.log('Contact form submitted successfully:', data.id);
-
-    return new Response(
-      JSON.stringify({ success: true, data }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    );
+    return secureJsonResponse({ success: true, data });
 
   } catch (error: any) {
     console.error('Error in submit-contact function:', error);
     await rateLimiter.recordAttempt(req);
-    return new Response(
-      JSON.stringify({ error: error.message || 'Internal server error' }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    );
+    return secureJsonResponse({ error: error.message || 'Internal server error' }, 500);
   }
 };
 

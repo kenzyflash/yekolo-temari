@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import Navigation from '../components/Navigation';
 import MatrixRain from '../components/MatrixRain';
 import { Github, Mail, User, Send, ExternalLink } from 'lucide-react';
@@ -7,11 +7,13 @@ import { SocialIcon } from 'react-social-icons';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { useCsrfToken } from '@/hooks/useCsrfToken';
 import { contactSchema, type ContactFormData } from '@/lib/validation-schemas';
 
-const Join = () => {
+const Join = memo(() => {
   const { toast } = useToast();
   const { user } = useAuth();
+  const { csrfToken } = useCsrfToken();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -44,6 +46,16 @@ const Join = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate CSRF token is present
+    if (!csrfToken) {
+      toast({
+        title: "Security Error",
+        description: "Please refresh the page and try again",
+        variant: "destructive"
+      });
+      return;
+    }
     
     // Client-side rate limit check
     const { formRateLimiters } = await import('@/lib/rateLimiter');
@@ -334,6 +346,9 @@ const Join = () => {
                 </h2>
                 
                 <form onSubmit={handleSubmit} className="space-y-6">
+                  {/* Hidden CSRF Token */}
+                  <input type="hidden" name="csrf_token" value={csrfToken} />
+                  
                   <div>
                     <label className="block text-brand-green mb-2">
                       <User className="inline h-4 w-4 mr-2" />
@@ -465,6 +480,8 @@ const Join = () => {
       </div>
     </div>
   );
-};
+});
+
+Join.displayName = 'Join';
 
 export default Join;

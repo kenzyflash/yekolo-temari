@@ -2,13 +2,9 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.3";
 import { Resend } from "npm:resend@2.0.0";
 import { EdgeRateLimiter } from "../_shared/rateLimiter.ts";
+import { secureJsonResponse, corsPreflightResponse } from '../_shared/securityHeaders.ts';
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
 
 // Rate limiter: 100 emails per hour per admin
 const emailRateLimiter = new EdgeRateLimiter("admin-email", {
@@ -39,7 +35,7 @@ const escapeHtml = (text: string): string => {
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return corsPreflightResponse();
   }
 
   try {

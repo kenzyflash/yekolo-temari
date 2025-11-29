@@ -1,18 +1,21 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, memo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight, Terminal, Shield, Code, Users, Calendar, Github } from 'lucide-react';
 import Navigation from '../components/Navigation';
 import MatrixRain from '../components/MatrixRain';
 import Footer from '../components/Footer';
 
-const Index = () => {
+const Index = memo(() => {
   const [displayText, setDisplayText] = useState('');
   const [showCursor, setShowCursor] = useState(true);
   const fullText = 'root@yekolo:~$ Welcome to Yekolo Temari';
 
   useEffect(() => {
     let i = 0;
+    let mounted = true;
+    
     const typeWriter = () => {
+      if (!mounted) return;
       if (i < fullText.length) {
         setDisplayText(fullText.slice(0, i + 1));
         i++;
@@ -26,7 +29,10 @@ const Index = () => {
       setShowCursor(prev => !prev);
     }, 500);
 
-    return () => clearInterval(cursorInterval);
+    return () => {
+      mounted = false;
+      clearInterval(cursorInterval);
+    };
   }, []);
 
   const features = [
@@ -83,6 +89,9 @@ const Index = () => {
                     src="/lovable-uploads/b0a82a80-d078-4caf-92be-cca56b1efd1e.png" 
                     alt="Yekolo Temari Hacker Logo" 
                     className="h-24 sm:h-32 lg:h-48 mx-auto mb-6 sm:mb-8 filter brightness-0 invert"
+                    loading="eager"
+                    decoding="async"
+                    fetchPriority="high"
                   />
                   
                   <h1 className="text-2xl xs:text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-white mb-4 sm:mb-6 glow-text">
@@ -217,6 +226,8 @@ const Index = () => {
       <Footer />
     </div>
   );
-};
+});
+
+Index.displayName = 'Index';
 
 export default Index;

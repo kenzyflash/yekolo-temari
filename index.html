@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -7,6 +6,8 @@
     <title>Yekolo Temari - Ethiopian Ethical Hacking Community</title>
     <meta name="description" content="Ethiopia's premier ethical hacking and cybersecurity community. Join us for CTF competitions, security workshops, and community-driven learning." />
     <meta name="author" content="Yekolo Temari" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://yekolotemari.com" />
 
     <meta property="og:title" content="Yekolo Temari - Ethiopian Ethical Hacking Community" />
     <meta property="og:description" content="Ethiopia's premier ethical hacking and cybersecurity community. Join us for CTF competitions, security workshops, and community-driven learning." />
@@ -17,7 +18,7 @@
     <meta name="twitter:site" content="@yekolo_temari" />
     <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
     
-    <!-- Content Security Policy for XSS protection -->
+    <!-- Enhanced Content Security Policy -->
     <meta http-equiv="Content-Security-Policy" content="
       default-src 'self';
       script-src 'self' 'unsafe-inline' 'unsafe-eval' https://mdwdnwgqnditzvwehdsk.supabase.co;
@@ -26,11 +27,23 @@
       font-src 'self' data:;
       connect-src 'self' https://mdwdnwgqnditzvwehdsk.supabase.co wss://mdwdnwgqnditzvwehdsk.supabase.co https://*.supabase.co wss://*.supabase.co;
       frame-src 'none';
+      frame-ancestors 'none';
       object-src 'none';
       base-uri 'self';
-      form-action 'self';
+      form-action 'self' https://mdwdnwgqnditzvwehdsk.supabase.co;
       upgrade-insecure-requests;
+      block-all-mixed-content;
     ">
+    
+    <!-- Additional Security Headers via Meta -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+    <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=()">
+    
+    <!-- Preconnect for performance -->
+    <link rel="preconnect" href="https://mdwdnwgqnditzvwehdsk.supabase.co" crossorigin>
+    <link rel="dns-prefetch" href="https://mdwdnwgqnditzvwehdsk.supabase.co">
     
     <link rel="icon" href="/lovable-uploads/b0a82a80-d078-4caf-92be-cca56b1efd1e.png" type="image/png">
   </head>

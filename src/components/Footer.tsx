@@ -1,7 +1,8 @@
-
+import { memo } from 'react';
 import { Github, MessageCircle, Mail, Shield, LogIn } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
-const Footer = () => {
+const Footer = memo(() => {
   const currentYear = new Date().getFullYear();
   
   return (
@@ -15,6 +16,8 @@ const Footer = () => {
                 src="/lovable-uploads/b0a82a80-d078-4caf-92be-cca56b1efd1e.png" 
                 alt="Yekolo Temari Logo" 
                 className="h-8 w-auto filter brightness-0 invert"
+                loading="lazy"
+                decoding="async"
               />
               <span className="text-lg font-bold text-brand-green">
                 Yekolo Temari
@@ -30,11 +33,11 @@ const Footer = () => {
           <div>
             <h4 className="text-white font-bold mb-4">Quick Links</h4>
             <ul className="space-y-2">
-              <li><a href="/" className="text-brand-green/80 hover:text-brand-red transition-colors">Home</a></li>
-              <li><a href="/about" className="text-brand-green/80 hover:text-brand-red transition-colors">About</a></li>
-              <li><a href="/blog" className="text-brand-green/80 hover:text-brand-red transition-colors">Blog</a></li>
-              <li><a href="/events" className="text-brand-green/80 hover:text-brand-red transition-colors">Events</a></li>
-              <li><a href="/projects" className="text-brand-green/80 hover:text-brand-red transition-colors">Projects</a></li>
+              <li><Link to="/" className="text-brand-green/80 hover:text-brand-red transition-colors">Home</Link></li>
+              <li><Link to="/about" className="text-brand-green/80 hover:text-brand-red transition-colors">About</Link></li>
+              <li><Link to="/blog" className="text-brand-green/80 hover:text-brand-red transition-colors">Blog</Link></li>
+              <li><Link to="/events" className="text-brand-green/80 hover:text-brand-red transition-colors">Events</Link></li>
+              <li><Link to="/projects" className="text-brand-green/80 hover:text-brand-red transition-colors">Projects</Link></li>
             </ul>
           </div>
 
@@ -42,15 +45,15 @@ const Footer = () => {
           <div>
             <h4 className="text-white font-bold mb-4">Community</h4>
             <ul className="space-y-2">
-              <li><a href="/join" className="text-brand-green/80 hover:text-brand-red transition-colors">Join Us</a></li>
+              <li><Link to="/join" className="text-brand-green/80 hover:text-brand-red transition-colors">Join Us</Link></li>
               <li><a href="#" className="text-brand-green/80 hover:text-brand-red transition-colors">Code of Conduct</a></li>
               <li><a href="#" className="text-brand-green/80 hover:text-brand-red transition-colors">Contributing</a></li>
               <li><a href="#" className="text-brand-green/80 hover:text-brand-red transition-colors">Resources</a></li>
               <li>
-                <a href="/auth" className="text-brand-green/80 hover:text-brand-red transition-colors flex items-center space-x-2">
+                <Link to="/auth" className="text-brand-green/80 hover:text-brand-red transition-colors flex items-center space-x-2">
                   <LogIn size={16} />
                   <span>Login</span>
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
@@ -59,19 +62,19 @@ const Footer = () => {
           <div>
             <h4 className="text-white font-bold mb-4">Connect</h4>
             <div className="flex space-x-4 mb-4">
-              <a href="#" className="text-brand-green hover:text-brand-red transition-colors">
+              <a href="https://github.com/yekolotemari" target="_blank" rel="noopener noreferrer" className="text-brand-green hover:text-brand-red transition-colors">
                 <Github size={20} />
               </a>
-              <a href="https://t.me/yekolotemari" target="_blank" rel="noopener noreferrer" className="text-brand-green hover:text-brand-red transition-colors">
+              <a href="https://t.me/temari_yekolo" target="_blank" rel="noopener noreferrer" className="text-brand-green hover:text-brand-red transition-colors">
                 <MessageCircle size={20} />
               </a>
-              <a href="mailto:info@yekolotemari.org" className="text-brand-green hover:text-brand-red transition-colors">
+              <a href="mailto:contact@yekolotemari.com" className="text-brand-green hover:text-brand-red transition-colors">
                 <Mail size={20} />
               </a>
             </div>
             <div className="text-brand-green/80 text-sm">
-              <p>Telegram: @yekolotemari</p>
-              <p>Email: info@yekolotemari.org</p>
+              <p>Telegram: @temari_yekolo</p>
+              <p>Email: contact@yekolotemari.com</p>
             </div>
           </div>
         </div>
@@ -88,6 +91,8 @@ const Footer = () => {
       </div>
     </footer>
   );
-};
+});
+
+Footer.displayName = 'Footer';
 
 export default Footer;

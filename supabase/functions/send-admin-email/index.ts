@@ -25,6 +25,18 @@ interface EmailRequest {
   message: string;
 }
 
+// HTML escape function to prevent XSS
+const escapeHtml = (text: string): string => {
+  const htmlEntities: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  };
+  return text.replace(/[&<>"']/g, (char) => htmlEntities[char]);
+};
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -163,7 +175,7 @@ const handler = async (req: Request): Promise<Response> => {
                 <div style="background: #000; color: #00ff41; padding: 20px; border: 2px solid #00ff41;">
                   <h1 style="color: #ff0000; margin: 0 0 20px 0;">OSCA Admin Message</h1>
                   <div style="background: #000; padding: 20px; white-space: pre-wrap;">
-                    ${message.replace(/\n/g, '<br>')}
+                    ${escapeHtml(message).replace(/\n/g, '<br>')}
                   </div>
                   <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #00ff41; font-size: 12px; color: #00ff41;">
                     <p>This message was sent by an OSCA administrator.</p>

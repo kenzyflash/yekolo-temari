@@ -144,6 +144,8 @@ const BlogPreview = ({ blogId, isOpen, onClose }: BlogPreviewProps) => {
               <div className="prose prose-invert prose-green max-w-none">
                 <div className="text-brand-green leading-relaxed">
                   <ReactMarkdown
+                    skipHtml={true}
+                    disallowedElements={['script', 'iframe', 'object', 'embed', 'form']}
                     components={{
                       h1: ({ children }) => <h1 className="text-3xl font-bold text-white mb-4">{children}</h1>,
                       h2: ({ children }) => <h2 className="text-2xl font-bold text-white mb-3 mt-6">{children}</h2>,

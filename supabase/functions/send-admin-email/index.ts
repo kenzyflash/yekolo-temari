@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.3";
 import { Resend } from "npm:resend@2.0.0";
 import { EdgeRateLimiter } from "../_shared/rateLimiter.ts";
-import { secureJsonResponse, corsPreflightResponse } from '../_shared/securityHeaders.ts';
+import { secureJsonResponse, corsPreflightResponse, corsHeaders } from '../_shared/securityHeaders.ts';
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 

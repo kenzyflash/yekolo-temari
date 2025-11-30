@@ -235,14 +235,14 @@ function generateRegistrationEmail(event: any, userName: string): string {
             <h1 style="margin: 0;">Registration Confirmed! 🎉</h1>
           </div>
           <div class="content">
-            <h2>Hello ${userName}!</h2>
+            <h2>Hello ${escapeHtml(userName)}!</h2>
             <p>Thank you for registering for our event. We're excited to have you join us!</p>
             
             <div class="event-details">
               <h3 style="margin-top: 0;">Event Details</h3>
               <div class="detail-row">
                 <span class="detail-label">Event:</span>
-                <span>${event.title}</span>
+                <span>${escapeHtml(event.title)}</span>
               </div>
               <div class="detail-row">
                 <span class="detail-label">Date:</span>
@@ -250,20 +250,20 @@ function generateRegistrationEmail(event: any, userName: string): string {
               </div>
               <div class="detail-row">
                 <span class="detail-label">Time:</span>
-                <span>${event.event_time}</span>
+                <span>${escapeHtml(event.event_time)}</span>
               </div>
               <div class="detail-row">
                 <span class="detail-label">Location:</span>
-                <span>${event.location}</span>
+                <span>${escapeHtml(event.location)}</span>
               </div>
               <div class="detail-row">
                 <span class="detail-label">Type:</span>
-                <span>${event.event_type}</span>
+                <span>${escapeHtml(event.event_type)}</span>
               </div>
             </div>
 
             <p><strong>Description:</strong></p>
-            <p>${event.description}</p>
+            <p>${escapeHtml(event.description)}</p>
 
             <p>If you need to unregister or have any questions, please contact us.</p>
             
@@ -299,13 +299,13 @@ function generateUnregistrationEmail(event: any, userName: string): string {
             <h1 style="margin: 0;">Unregistration Confirmed</h1>
           </div>
           <div class="content">
-            <h2>Hello ${userName},</h2>
+            <h2>Hello ${escapeHtml(userName)},</h2>
             <p>We confirm that you have been successfully unregistered from the following event:</p>
             
             <div class="event-details">
-              <h3 style="margin-top: 0;">${event.title}</h3>
+              <h3 style="margin-top: 0;">${escapeHtml(event.title)}</h3>
               <p><strong>Date:</strong> ${new Date(event.event_date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-              <p><strong>Time:</strong> ${event.event_time}</p>
+              <p><strong>Time:</strong> ${escapeHtml(event.event_time)}</p>
             </div>
 
             <p>We're sorry to see you won't be able to make it. If you change your mind, you can register again if spots are still available.</p>

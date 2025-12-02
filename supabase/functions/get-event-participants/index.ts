@@ -1,21 +1,17 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.3';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { secureJsonResponse, corsPreflightResponse, getResponseHeaders } from '../_shared/securityHeaders.ts';
 
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return corsPreflightResponse();
   }
 
   try {
     // Create authenticated client to verify user
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      throw new Error('No authorization header');
+      return secureJsonResponse({ error: 'No authorization header' }, 401);
     }
 
     const supabaseClient = createClient(
@@ -27,7 +23,7 @@ Deno.serve(async (req) => {
     // Verify user is authenticated and is admin
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
     if (userError || !user) {
-      throw new Error('Unauthorized');
+      return secureJsonResponse({ error: 'Unauthorized' }, 401);
     }
 
     // Check if user has admin role
@@ -40,13 +36,13 @@ Deno.serve(async (req) => {
 
     if (roleError || !roleData) {
       console.error('Admin check failed:', roleError);
-      throw new Error('Forbidden: Admin access required');
+      return secureJsonResponse({ error: 'Forbidden: Admin access required' }, 403);
     }
 
     // Get event ID from request
     const { eventId } = await req.json();
     if (!eventId) {
-      throw new Error('Event ID is required');
+      return secureJsonResponse({ error: 'Event ID is required' }, 400);
     }
 
     console.log(`Fetching participants for event: ${eventId}`);
@@ -66,7 +62,7 @@ Deno.serve(async (req) => {
 
     if (participantsError) {
       console.error('Error fetching participants:', participantsError);
-      throw participantsError;
+      return secureJsonResponse({ error: participantsError.message }, 500);
     }
 
     // Fetch user data from auth.users using service role
@@ -74,7 +70,7 @@ Deno.serve(async (req) => {
     
     if (authUsersError) {
       console.error('Error fetching auth users:', authUsersError);
-      throw authUsersError;
+      return secureJsonResponse({ error: authUsersError.message }, 500);
     }
 
     // Fetch profiles data to get phone numbers and names
@@ -107,18 +103,9 @@ Deno.serve(async (req) => {
 
     console.log(`Successfully fetched ${participantsWithUserData?.length || 0} participants`);
 
-    return new Response(
-      JSON.stringify({ participants: participantsWithUserData }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return secureJsonResponse({ participants: participantsWithUserData });
   } catch (error) {
     console.error('Error in get-event-participants:', error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { 
-        status: error.message.includes('Forbidden') ? 403 : 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    );
+    return secureJsonResponse({ error: error.message }, 500);
   }
 });

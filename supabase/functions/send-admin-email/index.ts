@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.3";
 import { Resend } from "npm:resend@2.0.0";
 import { EdgeRateLimiter } from "../_shared/rateLimiter.ts";
-import { secureJsonResponse, corsPreflightResponse, corsHeaders } from '../_shared/securityHeaders.ts';
+import { secureJsonResponse, corsPreflightResponse, getResponseHeaders } from '../_shared/securityHeaders.ts';
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -47,7 +47,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Get JWT from Authorization header
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      throw new Error("Missing Authorization header");
+      return secureJsonResponse({ error: "Missing Authorization header" }, 401);
     }
 
     // Verify user and admin status
@@ -55,7 +55,7 @@ const handler = async (req: Request): Promise<Response> => {
     const { data: { user }, error: userError } = await supabase.auth.getUser(jwt);
     
     if (userError || !user) {
-      throw new Error("Unauthorized");
+      return secureJsonResponse({ error: "Unauthorized" }, 401);
     }
 
     // Verify admin role
@@ -65,22 +65,16 @@ const handler = async (req: Request): Promise<Response> => {
       .eq('user_id', user.id);
 
     if (rolesError || !userRoles?.some(r => r.role === 'admin')) {
-      throw new Error("Admin access required");
+      return secureJsonResponse({ error: "Admin access required" }, 403);
     }
 
     // Check rate limit
     const rateLimitResult = await emailRateLimiter.check(req);
     if (!rateLimitResult.allowed) {
-      return new Response(
-        JSON.stringify({ error: rateLimitResult.message }),
-        {
-          status: 429,
-          headers: { 
-            "Content-Type": "application/json",
-            "Retry-After": rateLimitResult.retryAfter?.toString() || "3600",
-            ...corsHeaders 
-          },
-        }
+      return secureJsonResponse(
+        { error: rateLimitResult.message },
+        429,
+        { "Retry-After": rateLimitResult.retryAfter?.toString() || "3600" }
       );
     }
 
@@ -88,7 +82,7 @@ const handler = async (req: Request): Promise<Response> => {
     const { recipient_type, recipient_ids, role, subject, message }: EmailRequest = await req.json();
 
     if (!subject?.trim() || !message?.trim()) {
-      throw new Error("Subject and message are required");
+      return secureJsonResponse({ error: "Subject and message are required" }, 400);
     }
 
     console.log(`Admin ${user.email} sending emails - Type: ${recipient_type}`);
@@ -98,7 +92,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (recipient_type === 'individual' || recipient_type === 'selected') {
       if (!recipient_ids || recipient_ids.length === 0) {
-        throw new Error("Recipient IDs required for this type");
+        return secureJsonResponse({ error: "Recipient IDs required for this type" }, 400);
       }
 
       const { data: profiles, error: profilesError } = await supabase
@@ -107,7 +101,10 @@ const handler = async (req: Request): Promise<Response> => {
         .in('user_id', recipient_ids)
         .not('email', 'is', null);
 
-      if (profilesError) throw profilesError;
+      if (profilesError) {
+        console.error("Profiles error:", profilesError);
+        return secureJsonResponse({ error: profilesError.message }, 500);
+      }
       recipients = profiles || [];
 
     } else if (recipient_type === 'all') {
@@ -116,12 +113,15 @@ const handler = async (req: Request): Promise<Response> => {
         .select('user_id, email')
         .not('email', 'is', null);
 
-      if (profilesError) throw profilesError;
+      if (profilesError) {
+        console.error("Profiles error:", profilesError);
+        return secureJsonResponse({ error: profilesError.message }, 500);
+      }
       recipients = profiles || [];
 
     } else if (recipient_type === 'by_role') {
       if (!role) {
-        throw new Error("Role required for role-based filtering");
+        return secureJsonResponse({ error: "Role required for role-based filtering" }, 400);
       }
 
       const { data: roleUsers, error: roleError } = await supabase
@@ -129,7 +129,10 @@ const handler = async (req: Request): Promise<Response> => {
         .select('user_id')
         .eq('role', role);
 
-      if (roleError) throw roleError;
+      if (roleError) {
+        console.error("Role error:", roleError);
+        return secureJsonResponse({ error: roleError.message }, 500);
+      }
       
       const userIds = roleUsers?.map(r => r.user_id) || [];
       
@@ -140,13 +143,16 @@ const handler = async (req: Request): Promise<Response> => {
           .in('user_id', userIds)
           .not('email', 'is', null);
 
-        if (profilesError) throw profilesError;
+        if (profilesError) {
+          console.error("Profiles error:", profilesError);
+          return secureJsonResponse({ error: profilesError.message }, 500);
+        }
         recipients = profiles || [];
       }
     }
 
     if (recipients.length === 0) {
-      throw new Error("No recipients found");
+      return secureJsonResponse({ error: "No recipients found" }, 404);
     }
 
     console.log(`Sending to ${recipients.length} recipients`);
@@ -223,29 +229,18 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Email send complete: ${successCount} success, ${failureCount} failed`);
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: `Emails sent: ${successCount} succeeded, ${failureCount} failed`,
-        success_count: successCount,
-        failure_count: failureCount,
-        errors: errors.length > 0 ? errors : undefined,
-      }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
-    );
+    return secureJsonResponse({
+      success: true,
+      message: `Emails sent: ${successCount} succeeded, ${failureCount} failed`,
+      success_count: successCount,
+      failure_count: failureCount,
+      errors: errors.length > 0 ? errors : undefined,
+    });
 
   } catch (error: any) {
     console.error("Error in send-admin-email:", error);
-    return new Response(
-      JSON.stringify({ error: error.message || "Internal server error" }),
-      {
-        status: error.message === "Unauthorized" || error.message === "Admin access required" ? 403 : 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
-    );
+    const status = error.message === "Unauthorized" || error.message === "Admin access required" ? 403 : 500;
+    return secureJsonResponse({ error: error.message || "Internal server error" }, status);
   }
 };
 

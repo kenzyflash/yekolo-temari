@@ -2,13 +2,9 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.3";
 import { Resend } from "npm:resend@4.0.0";
 import { z } from "npm:zod@3.23.8";
+import { secureJsonResponse, corsPreflightResponse } from '../_shared/securityHeaders.ts';
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
 
 // Input validation schema
 const EmailRequestSchema = z.object({
@@ -41,7 +37,7 @@ function escapeHtml(text: string): string {
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return corsPreflightResponse();
   }
 
   try {
@@ -57,10 +53,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (userError || !user) {
       console.error("Authentication error:", userError);
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return secureJsonResponse({ error: "Unauthorized" }, 401);
     }
 
     const { data: roleData, error: roleError } = await supabaseClient
@@ -72,10 +65,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (roleError || !roleData) {
       console.error("Role check error:", roleError);
-      return new Response(
-        JSON.stringify({ error: "Forbidden - Admin access required" }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return secureJsonResponse({ error: "Forbidden - Admin access required" }, 403);
     }
 
     const requestBody = await req.json();
@@ -84,13 +74,7 @@ const handler = async (req: Request): Promise<Response> => {
     const validationResult = EmailRequestSchema.safeParse(requestBody);
     if (!validationResult.success) {
       console.error("Validation error:", validationResult.error);
-      return new Response(
-        JSON.stringify({ 
-          error: "Invalid input", 
-          details: validationResult.error.errors 
-        }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return secureJsonResponse({ error: "Invalid input", details: validationResult.error.errors }, 400);
     }
 
     const { participantIds, eventId, emailType, customSubject, customMessage }: EmailRequest = validationResult.data;
@@ -104,10 +88,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (eventError || !event) {
       console.error("Event fetch error:", eventError);
-      return new Response(
-        JSON.stringify({ error: "Event not found" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return secureJsonResponse({ error: "Event not found" }, 404);
     }
 
     // Get participants
@@ -124,10 +105,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (participantsError || !participants || participants.length === 0) {
       console.error("Participants fetch error:", participantsError);
-      return new Response(
-        JSON.stringify({ error: "No participants found" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return secureJsonResponse({ error: "No participants found" }, 404);
     }
 
     const emailResults = [];
@@ -196,19 +174,13 @@ const handler = async (req: Request): Promise<Response> => {
     const successCount = emailResults.filter(r => r.success).length;
     const failCount = emailResults.filter(r => !r.success).length;
 
-    return new Response(
-      JSON.stringify({ 
-        message: `Sent ${successCount} emails successfully, ${failCount} failed`,
-        results: emailResults 
-      }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return secureJsonResponse({ 
+      message: `Sent ${successCount} emails successfully, ${failCount} failed`,
+      results: emailResults 
+    });
   } catch (error: any) {
     console.error("Error in send-event-confirmation function:", error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return secureJsonResponse({ error: error.message }, 500);
   }
 };
 

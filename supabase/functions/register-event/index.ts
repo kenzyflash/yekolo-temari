@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.3';
 import { EdgeRateLimiter } from '../_shared/rateLimiter.ts';
-import { secureJsonResponse, corsPreflightResponse, corsHeaders } from '../_shared/securityHeaders.ts';
+import { secureJsonResponse, corsPreflightResponse } from '../_shared/securityHeaders.ts';
 
 // Rate limiter: 10 attempts per hour
 const rateLimiter = new EdgeRateLimiter('event_registration', {
@@ -19,7 +19,7 @@ interface RegistrationRequest {
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return corsPreflightResponse();
   }
 
   try {
@@ -27,15 +27,9 @@ const handler = async (req: Request): Promise<Response> => {
     const rateLimitCheck = await rateLimiter.check(req);
     if (!rateLimitCheck.allowed) {
       console.log('Rate limit exceeded for event registration');
-      return new Response(
-        JSON.stringify({ 
-          error: rateLimitCheck.message || 'Too many requests',
-          retryAfter: rateLimitCheck.retryAfter 
-        }),
-        {
-          status: 429,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
+      return secureJsonResponse(
+        { error: rateLimitCheck.message || 'Too many requests', retryAfter: rateLimitCheck.retryAfter },
+        429
       );
     }
 
@@ -43,13 +37,7 @@ const handler = async (req: Request): Promise<Response> => {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       await rateLimiter.recordAttempt(req);
-      return new Response(
-        JSON.stringify({ error: 'Missing authorization header' }),
-        {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
+      return secureJsonResponse({ error: 'Missing authorization header' }, 401);
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -62,13 +50,7 @@ const handler = async (req: Request): Promise<Response> => {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       await rateLimiter.recordAttempt(req);
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
+      return secureJsonResponse({ error: 'Unauthorized' }, 401);
     }
 
     const { event_id, user_id, action }: RegistrationRequest = await req.json();
@@ -76,25 +58,13 @@ const handler = async (req: Request): Promise<Response> => {
     // Validate that user can only register themselves
     if (user.id !== user_id) {
       await rateLimiter.recordAttempt(req);
-      return new Response(
-        JSON.stringify({ error: 'Cannot register other users' }),
-        {
-          status: 403,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
+      return secureJsonResponse({ error: 'Cannot register other users' }, 403);
     }
 
     // Validate event_id
     if (!event_id || typeof event_id !== 'string') {
       await rateLimiter.recordAttempt(req);
-      return new Response(
-        JSON.stringify({ error: 'Invalid event_id' }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
+      return secureJsonResponse({ error: 'Invalid event_id' }, 400);
     }
 
     if (action === 'register') {
@@ -107,24 +77,12 @@ const handler = async (req: Request): Promise<Response> => {
 
       if (eventError || !event) {
         await rateLimiter.recordAttempt(req);
-        return new Response(
-          JSON.stringify({ error: 'Event not found' }),
-          {
-            status: 404,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          }
-        );
+        return secureJsonResponse({ error: 'Event not found' }, 404);
       }
 
       if (!event.registration_open) {
         await rateLimiter.recordAttempt(req);
-        return new Response(
-          JSON.stringify({ error: 'Registration is closed for this event' }),
-          {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          }
-        );
+        return secureJsonResponse({ error: 'Registration is closed for this event' }, 400);
       }
 
       // Check if already registered
@@ -136,13 +94,7 @@ const handler = async (req: Request): Promise<Response> => {
         .single();
 
       if (existing) {
-        return new Response(
-          JSON.stringify({ error: 'Already registered for this event' }),
-          {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          }
-        );
+        return secureJsonResponse({ error: 'Already registered for this event' }, 400);
       }
 
       // Register user
@@ -159,25 +111,13 @@ const handler = async (req: Request): Promise<Response> => {
       if (error) {
         console.error('Error registering for event:', error);
         await rateLimiter.recordAttempt(req);
-        return new Response(
-          JSON.stringify({ error: 'Failed to register for event' }),
-          {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          }
-        );
+        return secureJsonResponse({ error: 'Failed to register for event' }, 500);
       }
 
       await rateLimiter.recordSuccess(req);
       console.log('User registered for event:', data.id);
 
-      return new Response(
-        JSON.stringify({ success: true, data }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
+      return secureJsonResponse({ success: true, data });
 
     } else if (action === 'unregister') {
       // Unregister user
@@ -190,47 +130,23 @@ const handler = async (req: Request): Promise<Response> => {
       if (error) {
         console.error('Error unregistering from event:', error);
         await rateLimiter.recordAttempt(req);
-        return new Response(
-          JSON.stringify({ error: 'Failed to unregister from event' }),
-          {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          }
-        );
+        return secureJsonResponse({ error: 'Failed to unregister from event' }, 500);
       }
 
       await rateLimiter.recordSuccess(req);
       console.log('User unregistered from event');
 
-      return new Response(
-        JSON.stringify({ success: true }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
+      return secureJsonResponse({ success: true });
 
     } else {
       await rateLimiter.recordAttempt(req);
-      return new Response(
-        JSON.stringify({ error: 'Invalid action' }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
+      return secureJsonResponse({ error: 'Invalid action' }, 400);
     }
 
   } catch (error: any) {
     console.error('Error in register-event function:', error);
     await rateLimiter.recordAttempt(req);
-    return new Response(
-      JSON.stringify({ error: error.message || 'Internal server error' }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    );
+    return secureJsonResponse({ error: error.message || 'Internal server error' }, 500);
   }
 };
 

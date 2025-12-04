@@ -14,3 +14,6 @@ verify_jwt = true
 
 [functions.send-admin-email]
 verify_jwt = true
+
+[functions.log-security-event]
+verify_jwt = false

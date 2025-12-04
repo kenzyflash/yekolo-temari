@@ -10,6 +10,7 @@ import { CsrfProvider } from "@/hooks/useCsrfToken";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import IdleTimeoutWarning from "@/components/IdleTimeoutWarning";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -68,6 +69,20 @@ const AuthRedirect = () => {
   return <Navigate to="/auth" replace />;
 };
 
+// Idle timeout wrapper component
+const IdleTimeoutWrapper = () => {
+  const { showTimeoutWarning, timeoutRemainingTime, resetIdleTimer, handleTimeoutLogout } = useAuth();
+  
+  return (
+    <IdleTimeoutWarning
+      isOpen={showTimeoutWarning}
+      remainingTime={timeoutRemainingTime}
+      onStayLoggedIn={resetIdleTimer}
+      onLogout={handleTimeoutLogout}
+    />
+  );
+};
+
 const App = () => {
   return (
     <ErrorBoundary>
@@ -77,6 +92,7 @@ const App = () => {
             <TooltipProvider>
               <Toaster />
               <Sonner />
+              <IdleTimeoutWrapper />
               <BrowserRouter>
                 <Suspense fallback={<PageLoader />}>
                   <Routes>

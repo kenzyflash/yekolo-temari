@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRoles } from '@/hooks/useUserRoles';
 import { useAuth } from '@/hooks/useAuth';
-import { Bell, User, Mail, X, Check, CheckCheck } from 'lucide-react';
+import { Bell, User, Mail, X, Check, CheckCheck, Shield, AlertTriangle, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Popover,
@@ -160,6 +160,12 @@ const AdminNotificationBell = () => {
         return <User className="h-4 w-4 text-brand-green" />;
       case 'new_message':
         return <Mail className="h-4 w-4 text-brand-red" />;
+      case 'role_change':
+        return <Shield className="h-4 w-4 text-yellow-500" />;
+      case 'failed_login':
+        return <Lock className="h-4 w-4 text-brand-red" />;
+      case 'suspicious_activity':
+        return <AlertTriangle className="h-4 w-4 text-orange-500" />;
       default:
         return <Bell className="h-4 w-4 text-brand-green" />;
     }

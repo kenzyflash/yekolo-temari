@@ -8,6 +8,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
+import {
   Table,
   TableBody,
   TableCell,
@@ -15,7 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Shield, UserX, UserCheck, AlertTriangle, RefreshCw, Search, Filter, CalendarIcon, Radio } from 'lucide-react';
+import { Shield, UserX, UserCheck, AlertTriangle, RefreshCw, Search, Filter, CalendarIcon, Radio, AlertCircle, Info } from 'lucide-react';
 import { format, startOfDay, endOfDay, subDays, isWithinInterval } from 'date-fns';
 import type { Tables } from '@/integrations/supabase/types';
 import { cn } from '@/lib/utils';
@@ -28,6 +37,62 @@ type DateRange = {
   to: Date | undefined;
 };
 
+type Severity = 'critical' | 'high' | 'medium' | 'low' | 'info';
+
+const ITEMS_PER_PAGE = 15;
+
+// Severity configuration for events
+const getSeverity = (eventType: string): Severity => {
+  const criticalEvents = ['failed_login', 'unauthorized_access', 'rate_limit_exceeded', 'suspicious_activity', 'account_locked'];
+  const highEvents = ['role_change', 'password_reset', 'permission_denied', 'admin_action'];
+  const mediumEvents = ['profile_update', 'settings_change', 'data_export', 'password_change'];
+  const lowEvents = ['login_success', 'logout', 'session_refresh', 'email_verified'];
+  
+  if (criticalEvents.includes(eventType)) return 'critical';
+  if (highEvents.includes(eventType)) return 'high';
+  if (mediumEvents.includes(eventType)) return 'medium';
+  if (lowEvents.includes(eventType)) return 'low';
+  return 'info';
+};
+
+const severityConfig: Record<Severity, { label: string; color: string; bgColor: string; borderColor: string; icon: React.ElementType }> = {
+  critical: { 
+    label: 'Critical', 
+    color: 'text-destructive', 
+    bgColor: 'bg-destructive/10',
+    borderColor: 'border-l-destructive',
+    icon: AlertCircle 
+  },
+  high: { 
+    label: 'High', 
+    color: 'text-orange-500', 
+    bgColor: 'bg-orange-500/10',
+    borderColor: 'border-l-orange-500',
+    icon: AlertTriangle 
+  },
+  medium: { 
+    label: 'Medium', 
+    color: 'text-yellow-500', 
+    bgColor: 'bg-yellow-500/10',
+    borderColor: 'border-l-yellow-500',
+    icon: Shield 
+  },
+  low: { 
+    label: 'Low', 
+    color: 'text-blue-500', 
+    bgColor: 'bg-blue-500/10',
+    borderColor: 'border-l-blue-500',
+    icon: Info 
+  },
+  info: { 
+    label: 'Info', 
+    color: 'text-muted-foreground', 
+    bgColor: 'bg-muted/50',
+    borderColor: 'border-l-muted-foreground',
+    icon: Info 
+  },
+};
+
 const AuditLogViewer = () => {
   const { toast } = useToast();
   const [securityEvents, setSecurityEvents] = useState<SecurityEvent[]>([]);
@@ -36,12 +101,19 @@ const AuditLogViewer = () => {
   const [activeView, setActiveView] = useState<'security' | 'audit'>('security');
   const [searchTerm, setSearchTerm] = useState('');
   const [eventTypeFilter, setEventTypeFilter] = useState<string>('all');
+  const [severityFilter, setSeverityFilter] = useState<string>('all');
   const [dateRange, setDateRange] = useState<DateRange>({ from: undefined, to: undefined });
   const [isLive, setIsLive] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, eventTypeFilter, severityFilter, dateRange, activeView]);
 
   // Real-time subscriptions
   useEffect(() => {
@@ -58,11 +130,23 @@ const AuditLogViewer = () => {
         },
         (payload) => {
           console.log('New security event:', payload);
-          setSecurityEvents(prev => [payload.new as SecurityEvent, ...prev]);
-          toast({
-            title: 'New Security Event',
-            description: `${(payload.new as SecurityEvent).event_type.replace(/_/g, ' ')}`,
-          });
+          const newEvent = payload.new as SecurityEvent;
+          const severity = getSeverity(newEvent.event_type);
+          setSecurityEvents(prev => [newEvent, ...prev]);
+          
+          // Show toast with severity-appropriate styling
+          if (severity === 'critical' || severity === 'high') {
+            toast({
+              title: `⚠️ ${severityConfig[severity].label} Security Event`,
+              description: `${newEvent.event_type.replace(/_/g, ' ')} - ${newEvent.user_email || 'Unknown user'}`,
+              variant: 'destructive',
+            });
+          } else {
+            toast({
+              title: 'New Security Event',
+              description: `${newEvent.event_type.replace(/_/g, ' ')}`,
+            });
+          }
         }
       )
       .subscribe();
@@ -101,12 +185,12 @@ const AuditLogViewer = () => {
           .from('security_events')
           .select('*')
           .order('created_at', { ascending: false })
-          .limit(100),
+          .limit(500),
         supabase
           .from('audit_logs')
           .select('*')
           .order('timestamp', { ascending: false })
-          .limit(100)
+          .limit(500)
       ]);
 
       if (securityRes.error) throw securityRes.error;
@@ -123,32 +207,6 @@ const AuditLogViewer = () => {
       });
     } finally {
       setLoading(false);
-    }
-  };
-
-  const getEventIcon = (eventType: string) => {
-    switch (eventType) {
-      case 'failed_login':
-        return <UserX className="h-4 w-4 text-destructive" />;
-      case 'role_change':
-        return <UserCheck className="h-4 w-4 text-brand-green" />;
-      case 'suspicious_activity':
-        return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
-      default:
-        return <Shield className="h-4 w-4 text-muted-foreground" />;
-    }
-  };
-
-  const getEventBadgeVariant = (eventType: string) => {
-    switch (eventType) {
-      case 'failed_login':
-        return 'destructive';
-      case 'role_change':
-        return 'default';
-      case 'suspicious_activity':
-        return 'secondary';
-      default:
-        return 'outline';
     }
   };
 
@@ -179,9 +237,10 @@ const AuditLogViewer = () => {
       event.ip_address?.includes(searchTerm);
     
     const matchesFilter = eventTypeFilter === 'all' || event.event_type === eventTypeFilter;
+    const matchesSeverity = severityFilter === 'all' || getSeverity(event.event_type) === severityFilter;
     const matchesDate = isWithinDateRange(event.created_at);
     
-    return matchesSearch && matchesFilter && matchesDate;
+    return matchesSearch && matchesFilter && matchesSeverity && matchesDate;
   });
 
   const filteredAuditLogs = auditLogs.filter(log => {
@@ -193,6 +252,103 @@ const AuditLogViewer = () => {
     
     return matchesSearch && matchesDate;
   });
+
+  // Pagination logic
+  const currentItems = activeView === 'security' ? filteredSecurityEvents : filteredAuditLogs;
+  const totalPages = Math.ceil(currentItems.length / ITEMS_PER_PAGE);
+  const paginatedItems = currentItems.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  const renderPaginationItems = () => {
+    const items = [];
+    const maxVisible = 5;
+    
+    if (totalPages <= maxVisible) {
+      for (let i = 1; i <= totalPages; i++) {
+        items.push(
+          <PaginationItem key={i}>
+            <PaginationLink
+              onClick={() => setCurrentPage(i)}
+              isActive={currentPage === i}
+              className="cursor-pointer"
+            >
+              {i}
+            </PaginationLink>
+          </PaginationItem>
+        );
+      }
+    } else {
+      items.push(
+        <PaginationItem key={1}>
+          <PaginationLink
+            onClick={() => setCurrentPage(1)}
+            isActive={currentPage === 1}
+            className="cursor-pointer"
+          >
+            1
+          </PaginationLink>
+        </PaginationItem>
+      );
+
+      if (currentPage > 3) {
+        items.push(
+          <PaginationItem key="ellipsis-start">
+            <PaginationEllipsis />
+          </PaginationItem>
+        );
+      }
+
+      const start = Math.max(2, currentPage - 1);
+      const end = Math.min(totalPages - 1, currentPage + 1);
+
+      for (let i = start; i <= end; i++) {
+        items.push(
+          <PaginationItem key={i}>
+            <PaginationLink
+              onClick={() => setCurrentPage(i)}
+              isActive={currentPage === i}
+              className="cursor-pointer"
+            >
+              {i}
+            </PaginationLink>
+          </PaginationItem>
+        );
+      }
+
+      if (currentPage < totalPages - 2) {
+        items.push(
+          <PaginationItem key="ellipsis-end">
+            <PaginationEllipsis />
+          </PaginationItem>
+        );
+      }
+
+      items.push(
+        <PaginationItem key={totalPages}>
+          <PaginationLink
+            onClick={() => setCurrentPage(totalPages)}
+            isActive={currentPage === totalPages}
+            className="cursor-pointer"
+          >
+            {totalPages}
+          </PaginationLink>
+        </PaginationItem>
+      );
+    }
+
+    return items;
+  };
+
+  // Severity counts for stats
+  const severityCounts = {
+    critical: filteredSecurityEvents.filter(e => getSeverity(e.event_type) === 'critical').length,
+    high: filteredSecurityEvents.filter(e => getSeverity(e.event_type) === 'high').length,
+    medium: filteredSecurityEvents.filter(e => getSeverity(e.event_type) === 'medium').length,
+    low: filteredSecurityEvents.filter(e => getSeverity(e.event_type) === 'low').length,
+    info: filteredSecurityEvents.filter(e => getSeverity(e.event_type) === 'info').length,
+  };
 
   if (loading) {
     return (
@@ -246,6 +402,35 @@ const AuditLogViewer = () => {
           Role Changes ({filteredAuditLogs.length})
         </Button>
       </div>
+
+      {/* Severity Stats Bar */}
+      {activeView === 'security' && (
+        <div className="flex flex-wrap gap-2">
+          {(Object.entries(severityCounts) as [Severity, number][]).map(([severity, count]) => {
+            const config = severityConfig[severity];
+            return (
+              <button
+                key={severity}
+                onClick={() => setSeverityFilter(severityFilter === severity ? 'all' : severity)}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all",
+                  config.bgColor,
+                  config.color,
+                  severityFilter === severity && "ring-2 ring-offset-2 ring-offset-background",
+                  severityFilter === severity && severity === 'critical' && "ring-destructive",
+                  severityFilter === severity && severity === 'high' && "ring-orange-500",
+                  severityFilter === severity && severity === 'medium' && "ring-yellow-500",
+                  severityFilter === severity && severity === 'low' && "ring-blue-500",
+                  severityFilter === severity && severity === 'info' && "ring-muted-foreground"
+                )}
+              >
+                <config.icon className="h-3.5 w-3.5" />
+                {config.label}: {count}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
@@ -321,11 +506,11 @@ const AuditLogViewer = () => {
 
       {/* Security Events View */}
       {activeView === 'security' && (
-        <div className="rounded-md border border-border">
+        <div className="rounded-md border border-border overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[50px]">Type</TableHead>
+                <TableHead className="w-[100px]">Severity</TableHead>
                 <TableHead>Event</TableHead>
                 <TableHead>User</TableHead>
                 <TableHead>IP Address</TableHead>
@@ -334,39 +519,57 @@ const AuditLogViewer = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredSecurityEvents.length === 0 ? (
+              {paginatedItems.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                     No security events found
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredSecurityEvents.map((event) => (
-                  <TableRow key={event.id}>
-                    <TableCell>{getEventIcon(event.event_type)}</TableCell>
-                    <TableCell>
-                      <Badge variant={getEventBadgeVariant(event.event_type) as any}>
-                        {event.event_type.replace(/_/g, ' ')}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="font-mono text-sm">
-                      {event.user_email || 'Unknown'}
-                    </TableCell>
-                    <TableCell className="font-mono text-sm text-muted-foreground">
-                      {event.ip_address || 'N/A'}
-                    </TableCell>
-                    <TableCell className="max-w-[200px]">
-                      {event.details && (
-                        <span className="text-sm text-muted-foreground truncate block">
-                          {JSON.stringify(event.details).slice(0, 50)}...
-                        </span>
+                (paginatedItems as SecurityEvent[]).map((event) => {
+                  const severity = getSeverity(event.event_type);
+                  const config = severityConfig[severity];
+                  const Icon = config.icon;
+                  
+                  return (
+                    <TableRow 
+                      key={event.id} 
+                      className={cn(
+                        "border-l-4",
+                        config.borderColor,
+                        severity === 'critical' && "bg-destructive/5"
                       )}
-                    </TableCell>
-                    <TableCell className="text-right text-sm text-muted-foreground">
-                      {format(new Date(event.created_at), 'MMM d, yyyy HH:mm')}
-                    </TableCell>
-                  </TableRow>
-                ))
+                    >
+                      <TableCell>
+                        <Badge className={cn(config.bgColor, config.color, "gap-1")}>
+                          <Icon className="h-3 w-3" />
+                          {config.label}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <span className="font-medium">
+                          {event.event_type.replace(/_/g, ' ')}
+                        </span>
+                      </TableCell>
+                      <TableCell className="font-mono text-sm">
+                        {event.user_email || 'Unknown'}
+                      </TableCell>
+                      <TableCell className="font-mono text-sm text-muted-foreground">
+                        {event.ip_address || 'N/A'}
+                      </TableCell>
+                      <TableCell className="max-w-[200px]">
+                        {event.details && (
+                          <span className="text-sm text-muted-foreground truncate block">
+                            {JSON.stringify(event.details).slice(0, 50)}...
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right text-sm text-muted-foreground">
+                        {format(new Date(event.created_at), 'MMM d, yyyy HH:mm')}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>
@@ -387,14 +590,14 @@ const AuditLogViewer = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredAuditLogs.length === 0 ? (
+              {paginatedItems.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                     No audit logs found
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredAuditLogs.map((log) => (
+                (paginatedItems as AuditLog[]).map((log) => (
                   <TableRow key={log.id}>
                     <TableCell>
                       <Badge variant="outline">{log.action}</Badge>
@@ -431,27 +634,61 @@ const AuditLogViewer = () => {
         </div>
       )}
 
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
+          <div className="text-sm text-muted-foreground">
+            Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to{' '}
+            {Math.min(currentPage * ITEMS_PER_PAGE, currentItems.length)} of{' '}
+            {currentItems.length} {activeView === 'security' ? 'events' : 'logs'}
+          </div>
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  className={cn(
+                    "cursor-pointer",
+                    currentPage === 1 && "pointer-events-none opacity-50"
+                  )}
+                />
+              </PaginationItem>
+              {renderPaginationItems()}
+              <PaginationItem>
+                <PaginationNext
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  className={cn(
+                    "cursor-pointer",
+                    currentPage === totalPages && "pointer-events-none opacity-50"
+                  )}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
+
       {/* Summary Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-card border border-border rounded-lg p-4">
           <div className="text-2xl font-bold text-foreground">{filteredSecurityEvents.length}</div>
           <div className="text-sm text-muted-foreground">Total Security Events</div>
         </div>
-        <div className="bg-card border border-border rounded-lg p-4">
-          <div className="text-2xl font-bold text-destructive">
-            {filteredSecurityEvents.filter(e => e.event_type === 'failed_login').length}
+        <div className={cn("border rounded-lg p-4", severityConfig.critical.bgColor, "border-destructive/30")}>
+          <div className={cn("text-2xl font-bold", severityConfig.critical.color)}>
+            {severityCounts.critical}
           </div>
-          <div className="text-sm text-muted-foreground">Failed Logins</div>
+          <div className="text-sm text-muted-foreground">Critical Events</div>
+        </div>
+        <div className={cn("border rounded-lg p-4", severityConfig.high.bgColor, "border-orange-500/30")}>
+          <div className={cn("text-2xl font-bold", severityConfig.high.color)}>
+            {severityCounts.high}
+          </div>
+          <div className="text-sm text-muted-foreground">High Severity</div>
         </div>
         <div className="bg-card border border-border rounded-lg p-4">
           <div className="text-2xl font-bold text-brand-green">{filteredAuditLogs.length}</div>
           <div className="text-sm text-muted-foreground">Role Changes</div>
-        </div>
-        <div className="bg-card border border-border rounded-lg p-4">
-          <div className="text-2xl font-bold text-yellow-500">
-            {filteredSecurityEvents.filter(e => e.event_type === 'suspicious_activity').length}
-          </div>
-          <div className="text-sm text-muted-foreground">Suspicious Activity</div>
         </div>
       </div>
     </div>

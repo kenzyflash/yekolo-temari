@@ -11,7 +11,8 @@ import ProjectManagement from '@/components/admin/ProjectManagement';
 import UserManagement from '@/components/admin/UserManagement';
 import ContactMessageManagement from '@/components/admin/ContactMessageManagement';
 import EmailManagement from '@/components/admin/EmailManagement';
-import { Settings, BookOpen, Calendar, FolderOpen, Users, Shield, Mail, Send, BarChart3 } from 'lucide-react';
+import AuditLogViewer from '@/components/admin/AuditLogViewer';
+import { Settings, BookOpen, Calendar, FolderOpen, Users, Shield, Mail, Send, BarChart3, FileText } from 'lucide-react';
 import AdminAnalytics from '@/components/admin/AdminAnalytics';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -133,7 +134,8 @@ const Admin = () => {
     { id: 'projects', name: 'Projects', icon: FolderOpen, count: stats.projects },
     { id: 'users', name: 'Users', icon: Users, count: stats.users },
     { id: 'messages', name: 'Messages', icon: Mail, count: stats.messages },
-    { id: 'email', name: 'Email', icon: Send, count: stats.emails }
+    { id: 'email', name: 'Email', icon: Send, count: stats.emails },
+    { id: 'audit', name: 'Audit Logs', icon: FileText, count: null }
   ];
 
   return (
@@ -236,6 +238,7 @@ const Admin = () => {
               {activeTab === 'users' && <UserManagement />}
               {activeTab === 'messages' && <ContactMessageManagement />}
               {activeTab === 'email' && <EmailManagement />}
+              {activeTab === 'audit' && <AuditLogViewer />}
             </div>
           </div>
         </div>

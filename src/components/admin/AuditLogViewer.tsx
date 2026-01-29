@@ -24,7 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Shield, UserX, UserCheck, AlertTriangle, RefreshCw, Search, Filter, CalendarIcon, Radio, AlertCircle, Info } from 'lucide-react';
+import { Shield, UserX, UserCheck, AlertTriangle, RefreshCw, Search, Filter, CalendarIcon, Radio, AlertCircle, Info, Download } from 'lucide-react';
 import { format, startOfDay, endOfDay, subDays, isWithinInterval } from 'date-fns';
 import type { Tables } from '@/integrations/supabase/types';
 import { cn } from '@/lib/utils';
@@ -220,6 +220,53 @@ const AuditLogViewer = () => {
     setDateRange({ from: undefined, to: undefined });
   };
 
+  const exportToCsv = () => {
+    let csvContent: string;
+    let filename: string;
+    
+    if (activeView === 'security') {
+      const headers = ['ID', 'Event Type', 'Severity', 'User Email', 'IP Address', 'Details', 'Created At'];
+      const rows = filteredSecurityEvents.map(event => [
+        event.id,
+        event.event_type,
+        getSeverity(event.event_type),
+        event.user_email || '',
+        event.ip_address || '',
+        JSON.stringify(event.details || {}),
+        event.created_at
+      ]);
+      csvContent = [headers, ...rows].map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
+      filename = `security_events_${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    } else {
+      const headers = ['ID', 'Action', 'Actor Email', 'Target Email', 'Old Role', 'New Role', 'Timestamp'];
+      const rows = filteredAuditLogs.map(log => [
+        log.id,
+        log.action,
+        log.actor_user_email,
+        log.target_user_email,
+        log.old_role || '',
+        log.new_role || '',
+        log.timestamp
+      ]);
+      csvContent = [headers, ...rows].map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
+      filename = `audit_logs_${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    }
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast({
+      title: 'Success',
+      description: `Exported ${activeView === 'security' ? filteredSecurityEvents.length : filteredAuditLogs.length} records to ${filename}`
+    });
+  };
+
   const isWithinDateRange = (dateStr: string) => {
     if (!dateRange.from && !dateRange.to) return true;
     const date = new Date(dateStr);
@@ -381,6 +428,10 @@ const AuditLogViewer = () => {
           <Button onClick={fetchData} variant="outline" size="sm">
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
+          </Button>
+          <Button onClick={exportToCsv} variant="outline" size="sm">
+            <Download className="h-4 w-4 mr-2" />
+            Export CSV
           </Button>
         </div>
       </div>

@@ -8,6 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+import {
   Pagination,
   PaginationContent,
   PaginationEllipsis,
@@ -24,7 +29,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Shield, UserX, UserCheck, AlertTriangle, RefreshCw, Search, Filter, CalendarIcon, Radio, AlertCircle, Info, Download } from 'lucide-react';
+import { Shield, UserX, UserCheck, AlertTriangle, RefreshCw, Search, Filter, CalendarIcon, Radio, AlertCircle, Info, Download, ChevronDown, ChevronRight } from 'lucide-react';
 import { format, startOfDay, endOfDay, subDays, isWithinInterval } from 'date-fns';
 import type { Tables } from '@/integrations/supabase/types';
 import { cn } from '@/lib/utils';
@@ -105,6 +110,19 @@ const AuditLogViewer = () => {
   const [dateRange, setDateRange] = useState<DateRange>({ from: undefined, to: undefined });
   const [isLive, setIsLive] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+
+  const toggleRowExpansion = (id: string) => {
+    setExpandedRows(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
 
   useEffect(() => {
     fetchData();
@@ -561,11 +579,11 @@ const AuditLogViewer = () => {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[40px]"></TableHead>
                 <TableHead className="w-[100px]">Severity</TableHead>
                 <TableHead>Event</TableHead>
                 <TableHead>User</TableHead>
                 <TableHead>IP Address</TableHead>
-                <TableHead>Details</TableHead>
                 <TableHead className="text-right">Time</TableHead>
               </TableRow>
             </TableHeader>
@@ -581,44 +599,81 @@ const AuditLogViewer = () => {
                   const severity = getSeverity(event.event_type);
                   const config = severityConfig[severity];
                   const Icon = config.icon;
+                  const isExpanded = expandedRows.has(event.id);
+                  const hasDetails = event.details && Object.keys(event.details as object).length > 0;
                   
                   return (
-                    <TableRow 
-                      key={event.id} 
-                      className={cn(
-                        "border-l-4",
-                        config.borderColor,
-                        severity === 'critical' && "bg-destructive/5"
-                      )}
-                    >
-                      <TableCell>
-                        <Badge className={cn(config.bgColor, config.color, "gap-1")}>
-                          <Icon className="h-3 w-3" />
-                          {config.label}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <span className="font-medium">
-                          {event.event_type.replace(/_/g, ' ')}
-                        </span>
-                      </TableCell>
-                      <TableCell className="font-mono text-sm">
-                        {event.user_email || 'Unknown'}
-                      </TableCell>
-                      <TableCell className="font-mono text-sm text-muted-foreground">
-                        {event.ip_address || 'N/A'}
-                      </TableCell>
-                      <TableCell className="max-w-[200px]">
-                        {event.details && (
-                          <span className="text-sm text-muted-foreground truncate block">
-                            {JSON.stringify(event.details).slice(0, 50)}...
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right text-sm text-muted-foreground">
-                        {format(new Date(event.created_at), 'MMM d, yyyy HH:mm')}
-                      </TableCell>
-                    </TableRow>
+                    <Collapsible key={event.id} open={isExpanded} onOpenChange={() => hasDetails && toggleRowExpansion(event.id)} asChild>
+                      <>
+                        <CollapsibleTrigger asChild disabled={!hasDetails}>
+                          <TableRow 
+                            className={cn(
+                              "border-l-4 transition-colors",
+                              config.borderColor,
+                              severity === 'critical' && "bg-destructive/5",
+                              hasDetails && "cursor-pointer hover:bg-muted/50"
+                            )}
+                          >
+                            <TableCell className="w-[40px]">
+                              {hasDetails && (
+                                isExpanded ? (
+                                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                ) : (
+                                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                                )
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <Badge className={cn(config.bgColor, config.color, "gap-1")}>
+                                <Icon className="h-3 w-3" />
+                                {config.label}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <span className="font-medium">
+                                {event.event_type.replace(/_/g, ' ')}
+                              </span>
+                            </TableCell>
+                            <TableCell className="font-mono text-sm">
+                              {event.user_email || 'Unknown'}
+                            </TableCell>
+                            <TableCell className="font-mono text-sm text-muted-foreground">
+                              {event.ip_address || 'N/A'}
+                            </TableCell>
+                            <TableCell className="text-right text-sm text-muted-foreground">
+                              {format(new Date(event.created_at), 'MMM d, yyyy HH:mm')}
+                            </TableCell>
+                          </TableRow>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent asChild>
+                          <TableRow className={cn("border-l-4", config.borderColor, "bg-muted/30")}>
+                            <TableCell colSpan={6} className="py-4">
+                              <div className="space-y-3 px-4">
+                                <h4 className="text-sm font-semibold text-foreground">Event Details</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <div>
+                                    <span className="text-xs font-medium text-muted-foreground uppercase">Event ID</span>
+                                    <p className="font-mono text-sm">{event.id}</p>
+                                  </div>
+                                  <div>
+                                    <span className="text-xs font-medium text-muted-foreground uppercase">User ID</span>
+                                    <p className="font-mono text-sm">{event.user_id || 'N/A'}</p>
+                                  </div>
+                                </div>
+                                {event.details && (
+                                  <div>
+                                    <span className="text-xs font-medium text-muted-foreground uppercase">Full Details</span>
+                                    <pre className="mt-1 p-3 bg-background rounded-md text-sm overflow-x-auto border border-border">
+                                      {JSON.stringify(event.details, null, 2)}
+                                    </pre>
+                                  </div>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        </CollapsibleContent>
+                      </>
+                    </Collapsible>
                   );
                 })
               )}
@@ -633,6 +688,7 @@ const AuditLogViewer = () => {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[40px]"></TableHead>
                 <TableHead>Action</TableHead>
                 <TableHead>Actor</TableHead>
                 <TableHead>Target User</TableHead>
@@ -643,42 +699,91 @@ const AuditLogViewer = () => {
             <TableBody>
               {paginatedItems.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                     No audit logs found
                   </TableCell>
                 </TableRow>
               ) : (
-                (paginatedItems as AuditLog[]).map((log) => (
-                  <TableRow key={log.id}>
-                    <TableCell>
-                      <Badge variant="outline">{log.action}</Badge>
-                    </TableCell>
-                    <TableCell className="font-mono text-sm">
-                      {log.actor_user_email}
-                    </TableCell>
-                    <TableCell className="font-mono text-sm">
-                      {log.target_user_email}
-                    </TableCell>
-                    <TableCell>
-                      {log.old_role && log.new_role ? (
-                        <span className="text-sm">
-                          <Badge variant="secondary" className="mr-1">{log.old_role}</Badge>
-                          →
-                          <Badge variant="default" className="ml-1">{log.new_role}</Badge>
-                        </span>
-                      ) : log.new_role ? (
-                        <Badge variant="default">{log.new_role}</Badge>
-                      ) : log.old_role ? (
-                        <span className="text-muted-foreground">Removed: {log.old_role}</span>
-                      ) : (
-                        <span className="text-muted-foreground">N/A</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right text-sm text-muted-foreground">
-                      {format(new Date(log.timestamp), 'MMM d, yyyy HH:mm')}
-                    </TableCell>
-                  </TableRow>
-                ))
+                (paginatedItems as AuditLog[]).map((log) => {
+                  const isExpanded = expandedRows.has(log.id);
+                  const hasAdditionalData = log.additional_data && Object.keys(log.additional_data as object).length > 0;
+                  
+                  return (
+                    <Collapsible key={log.id} open={isExpanded} onOpenChange={() => toggleRowExpansion(log.id)} asChild>
+                      <>
+                        <CollapsibleTrigger asChild>
+                          <TableRow className="cursor-pointer hover:bg-muted/50 transition-colors">
+                            <TableCell className="w-[40px]">
+                              {isExpanded ? (
+                                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                              ) : (
+                                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{log.action}</Badge>
+                            </TableCell>
+                            <TableCell className="font-mono text-sm">
+                              {log.actor_user_email}
+                            </TableCell>
+                            <TableCell className="font-mono text-sm">
+                              {log.target_user_email}
+                            </TableCell>
+                            <TableCell>
+                              {log.old_role && log.new_role ? (
+                                <span className="text-sm">
+                                  <Badge variant="secondary" className="mr-1">{log.old_role}</Badge>
+                                  →
+                                  <Badge variant="default" className="ml-1">{log.new_role}</Badge>
+                                </span>
+                              ) : log.new_role ? (
+                                <Badge variant="default">{log.new_role}</Badge>
+                              ) : log.old_role ? (
+                                <span className="text-muted-foreground">Removed: {log.old_role}</span>
+                              ) : (
+                                <span className="text-muted-foreground">N/A</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right text-sm text-muted-foreground">
+                              {format(new Date(log.timestamp), 'MMM d, yyyy HH:mm')}
+                            </TableCell>
+                          </TableRow>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent asChild>
+                          <TableRow className="bg-muted/30">
+                            <TableCell colSpan={6} className="py-4">
+                              <div className="space-y-3 px-4">
+                                <h4 className="text-sm font-semibold text-foreground">Log Details</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                  <div>
+                                    <span className="text-xs font-medium text-muted-foreground uppercase">Log ID</span>
+                                    <p className="font-mono text-sm">{log.id}</p>
+                                  </div>
+                                  <div>
+                                    <span className="text-xs font-medium text-muted-foreground uppercase">Actor User ID</span>
+                                    <p className="font-mono text-sm">{log.actor_user_id}</p>
+                                  </div>
+                                  <div>
+                                    <span className="text-xs font-medium text-muted-foreground uppercase">Target User ID</span>
+                                    <p className="font-mono text-sm">{log.target_user_id}</p>
+                                  </div>
+                                </div>
+                                {hasAdditionalData && (
+                                  <div>
+                                    <span className="text-xs font-medium text-muted-foreground uppercase">Additional Data</span>
+                                    <pre className="mt-1 p-3 bg-background rounded-md text-sm overflow-x-auto border border-border">
+                                      {JSON.stringify(log.additional_data, null, 2)}
+                                    </pre>
+                                  </div>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        </CollapsibleContent>
+                      </>
+                    </Collapsible>
+                  );
+                })
               )}
             </TableBody>
           </Table>

@@ -148,13 +148,61 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       };
     }
 
-    const { error } = await supabase.auth.signInWithPassword({
+    // Check if account is locked
+    try {
+      const lockoutResponse = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-account-lockout?action=check`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        }
+      );
+      
+      if (lockoutResponse.ok) {
+        const lockoutData = await lockoutResponse.json();
+        if (lockoutData.locked) {
+          return { 
+            error: { 
+              message: lockoutData.message || 'Account is locked. Please try again later.'
+            } 
+          };
+        }
+      }
+    } catch (e) {
+      console.error('Error checking account lockout:', e);
+      // Continue with login attempt if lockout check fails
+    }
+
+    const { error, data } = await supabase.auth.signInWithPassword({
       email,
       password
     });
     
+    // Get device info for tracking
+    const userAgent = navigator.userAgent;
+    
     if (error) {
       authRateLimiters.signIn.recordAttempt();
+      
+      // Record failed login attempt
+      try {
+        await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-account-lockout?action=record`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              email, 
+              success: false,
+              user_agent: userAgent,
+              failure_reason: error.message
+            })
+          }
+        );
+      } catch (e) {
+        console.error('Error recording login attempt:', e);
+      }
       
       // Track failed login attempts for security notifications
       const now = Date.now();
@@ -179,9 +227,76 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       authRateLimiters.signIn.recordSuccess();
       // Clear failed attempts on successful login
       failedLoginAttempts.delete(email);
+      
+      // Record successful login
+      try {
+        await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-account-lockout?action=record`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              email, 
+              success: true,
+              user_agent: userAgent
+            })
+          }
+        );
+      } catch (e) {
+        console.error('Error recording login success:', e);
+      }
+
+      // Track session fingerprint
+      if (data?.session) {
+        try {
+          const fingerprintHash = await generateFingerprint();
+          await fetch(
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/track-session-fingerprint`,
+            {
+              method: 'POST',
+              headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${data.session.access_token}`
+              },
+              body: JSON.stringify({ 
+                fingerprint_hash: fingerprintHash,
+                user_agent: userAgent,
+                device_info: {
+                  platform: navigator.platform,
+                  language: navigator.language,
+                  screen: `${screen.width}x${screen.height}`
+                }
+              })
+            }
+          );
+        } catch (e) {
+          console.error('Error tracking session fingerprint:', e);
+        }
+      }
     }
     
     return { error };
+  };
+
+  // Simple fingerprint generator based on browser characteristics
+  const generateFingerprint = async (): Promise<string> => {
+    const components = [
+      navigator.userAgent,
+      navigator.language,
+      navigator.platform,
+      screen.width,
+      screen.height,
+      screen.colorDepth,
+      new Date().getTimezoneOffset(),
+      navigator.hardwareConcurrency || 0
+    ];
+    
+    const data = components.join('|');
+    const encoder = new TextEncoder();
+    const dataBuffer = encoder.encode(data);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   };
 
   const signOut = async () => {

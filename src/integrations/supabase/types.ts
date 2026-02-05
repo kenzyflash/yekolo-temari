@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_ip_allowlist: {
+        Row: {
+          added_by: string
+          created_at: string
+          description: string | null
+          id: string
+          ip_address: string
+          is_active: boolean | null
+        }
+        Insert: {
+          added_by: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          ip_address: string
+          is_active?: boolean | null
+        }
+        Update: {
+          added_by?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          ip_address?: string
+          is_active?: boolean | null
+        }
+        Relationships: []
+      }
       admin_notifications: {
         Row: {
           created_at: string
@@ -41,6 +68,33 @@ export type Database = {
           read?: boolean
           title?: string
           type?: string
+        }
+        Relationships: []
+      }
+      admin_security_settings: {
+        Row: {
+          description: string | null
+          id: string
+          setting_key: string
+          setting_value: Json
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          description?: string | null
+          id?: string
+          setting_key: string
+          setting_value: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          description?: string | null
+          id?: string
+          setting_key?: string
+          setting_value?: Json
+          updated_at?: string
+          updated_by?: string | null
         }
         Relationships: []
       }
@@ -87,6 +141,7 @@ export type Database = {
         Row: {
           author_id: string
           author_name: string
+          auto_publish: boolean | null
           category: string | null
           content: string
           created_at: string | null
@@ -94,6 +149,7 @@ export type Database = {
           id: string
           published: boolean | null
           read_time: string | null
+          scheduled_publish_at: string | null
           status: string | null
           tags: string[] | null
           title: string
@@ -102,6 +158,7 @@ export type Database = {
         Insert: {
           author_id: string
           author_name: string
+          auto_publish?: boolean | null
           category?: string | null
           content: string
           created_at?: string | null
@@ -109,6 +166,7 @@ export type Database = {
           id?: string
           published?: boolean | null
           read_time?: string | null
+          scheduled_publish_at?: string | null
           status?: string | null
           tags?: string[] | null
           title: string
@@ -117,6 +175,7 @@ export type Database = {
         Update: {
           author_id?: string
           author_name?: string
+          auto_publish?: boolean | null
           category?: string | null
           content?: string
           created_at?: string | null
@@ -124,6 +183,7 @@ export type Database = {
           id?: string
           published?: boolean | null
           read_time?: string | null
+          scheduled_publish_at?: string | null
           status?: string | null
           tags?: string[] | null
           title?: string
@@ -164,6 +224,42 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      content_versions: {
+        Row: {
+          change_summary: string | null
+          content: Json
+          content_id: string
+          content_type: string
+          created_at: string
+          created_by: string
+          id: string
+          title: string
+          version_number: number
+        }
+        Insert: {
+          change_summary?: string | null
+          content: Json
+          content_id: string
+          content_type: string
+          created_at?: string
+          created_by: string
+          id?: string
+          title: string
+          version_number: number
+        }
+        Update: {
+          change_summary?: string | null
+          content?: Json
+          content_id?: string
+          content_type?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          title?: string
+          version_number?: number
         }
         Relationships: []
       }
@@ -301,15 +397,39 @@ export type Database = {
         }
         Relationships: []
       }
+      password_history: {
+        Row: {
+          created_at: string
+          id: string
+          password_hash: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          password_hash: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          password_hash?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
           bio: string | null
           created_at: string
           email: string | null
+          failed_login_count: number | null
           first_name: string | null
           id: string
+          last_failed_login: string | null
           last_name: string | null
+          locked_until: string | null
           phone: string | null
           updated_at: string
           user_id: string
@@ -319,9 +439,12 @@ export type Database = {
           bio?: string | null
           created_at?: string
           email?: string | null
+          failed_login_count?: number | null
           first_name?: string | null
           id?: string
+          last_failed_login?: string | null
           last_name?: string | null
+          locked_until?: string | null
           phone?: string | null
           updated_at?: string
           user_id: string
@@ -331,9 +454,12 @@ export type Database = {
           bio?: string | null
           created_at?: string
           email?: string | null
+          failed_login_count?: number | null
           first_name?: string | null
           id?: string
+          last_failed_login?: string | null
           last_name?: string | null
+          locked_until?: string | null
           phone?: string | null
           updated_at?: string
           user_id?: string
@@ -442,6 +568,78 @@ export type Database = {
           ip_address?: string | null
           user_email?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      session_fingerprints: {
+        Row: {
+          created_at: string
+          device_info: Json | null
+          fingerprint_hash: string
+          id: string
+          ip_address: string | null
+          is_trusted: boolean | null
+          last_seen: string
+          session_id: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_info?: Json | null
+          fingerprint_hash: string
+          id?: string
+          ip_address?: string | null
+          is_trusted?: boolean | null
+          last_seen?: string
+          session_id: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_info?: Json | null
+          fingerprint_hash?: string
+          id?: string
+          ip_address?: string | null
+          is_trusted?: boolean | null
+          last_seen?: string
+          session_id?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_login_history: {
+        Row: {
+          device_info: Json | null
+          failure_reason: string | null
+          id: string
+          ip_address: string | null
+          login_at: string
+          login_success: boolean
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          device_info?: Json | null
+          failure_reason?: string | null
+          id?: string
+          ip_address?: string | null
+          login_at?: string
+          login_success?: boolean
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          device_info?: Json | null
+          failure_reason?: string | null
+          id?: string
+          ip_address?: string | null
+          login_at?: string
+          login_success?: boolean
+          user_agent?: string | null
+          user_id?: string
         }
         Relationships: []
       }

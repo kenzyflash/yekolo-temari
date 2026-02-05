@@ -140,7 +140,7 @@ export const projectSchema = z.object({
     .default([])
 });
 
-// Authentication validation schema
+// Authentication validation schema with enhanced password requirements
 export const authSchema = z.object({
   email: z
     .string()
@@ -153,7 +153,8 @@ export const authSchema = z.object({
     .max(128, "Password must be less than 128 characters")
     .refine((password) => /[A-Z]/.test(password), "Password must contain at least one uppercase letter")
     .refine((password) => /[a-z]/.test(password), "Password must contain at least one lowercase letter")
-    .refine((password) => /[0-9]/.test(password), "Password must contain at least one number"),
+    .refine((password) => /[0-9]/.test(password), "Password must contain at least one number")
+    .refine((password) => /[!@#$%^&*(),.?":{}|<>]/.test(password), "Password must contain at least one special character (!@#$%^&*(),.?\":{}|<>)"),
   confirmPassword: z
     .string()
     .optional(),

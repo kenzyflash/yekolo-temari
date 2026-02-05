@@ -12,7 +12,11 @@ import UserManagement from '@/components/admin/UserManagement';
 import ContactMessageManagement from '@/components/admin/ContactMessageManagement';
 import EmailManagement from '@/components/admin/EmailManagement';
 import AuditLogViewer from '@/components/admin/AuditLogViewer';
-import { Settings, BookOpen, Calendar, FolderOpen, Users, Shield, Mail, Send, BarChart3, FileText } from 'lucide-react';
+import SecuritySettings from '@/components/admin/SecuritySettings';
+import BulkUserManagement from '@/components/admin/BulkUserManagement';
+import RateLimitingDashboard from '@/components/admin/RateLimitingDashboard';
+import ContentVersioning from '@/components/admin/ContentVersioning';
+import { Settings, BookOpen, Calendar, FolderOpen, Users, Shield, Mail, Send, BarChart3, FileText, Lock, Activity, History } from 'lucide-react';
 import AdminAnalytics from '@/components/admin/AdminAnalytics';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -133,9 +137,13 @@ const Admin = () => {
     { id: 'events', name: 'Events', icon: Calendar, count: stats.events },
     { id: 'projects', name: 'Projects', icon: FolderOpen, count: stats.projects },
     { id: 'users', name: 'Users', icon: Users, count: stats.users },
+    { id: 'bulk-users', name: 'Bulk Actions', icon: Users, count: null },
     { id: 'messages', name: 'Messages', icon: Mail, count: stats.messages },
     { id: 'email', name: 'Email', icon: Send, count: stats.emails },
-    { id: 'audit', name: 'Audit Logs', icon: FileText, count: null }
+    { id: 'audit', name: 'Audit Logs', icon: FileText, count: null },
+    { id: 'security', name: 'Security', icon: Lock, count: null },
+    { id: 'rate-limits', name: 'Rate Limits', icon: Activity, count: null },
+    { id: 'versioning', name: 'Versioning', icon: History, count: null }
   ];
 
   return (
@@ -236,9 +244,13 @@ const Admin = () => {
               {activeTab === 'events' && <EventManagement />}
               {activeTab === 'projects' && <ProjectManagement />}
               {activeTab === 'users' && <UserManagement />}
+              {activeTab === 'bulk-users' && <BulkUserManagement />}
               {activeTab === 'messages' && <ContactMessageManagement />}
               {activeTab === 'email' && <EmailManagement />}
               {activeTab === 'audit' && <AuditLogViewer />}
+              {activeTab === 'security' && <SecuritySettings />}
+              {activeTab === 'rate-limits' && <RateLimitingDashboard />}
+              {activeTab === 'versioning' && <ContentVersioning />}
             </div>
           </div>
         </div>

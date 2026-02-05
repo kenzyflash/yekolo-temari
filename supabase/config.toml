@@ -17,3 +17,12 @@ verify_jwt = true
 
 [functions.log-security-event]
 verify_jwt = false
+
+[functions.send-security-alert]
+verify_jwt = false
+
+[functions.check-account-lockout]
+verify_jwt = false
+
+[functions.track-session-fingerprint]
+verify_jwt = true

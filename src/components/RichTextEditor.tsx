@@ -43,6 +43,33 @@ const RichTextEditor = ({ blogId, onClose, onSave }: RichTextEditorProps) => {
   const [newTag, setNewTag] = useState('');
   const [loading, setLoading] = useState(false);
   const [showImageUpload, setShowImageUpload] = useState(false);
+  const [authorDisplayName, setAuthorDisplayName] = useState<string>('Anonymous');
+
+  // Fetch author display name from profile (never expose email)
+  useEffect(() => {
+    const fetchAuthorName = async () => {
+      if (!user?.id) return;
+      
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('first_name, last_name')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (profile) {
+          const firstName = profile.first_name || '';
+          const lastName = profile.last_name || '';
+          const displayName = [firstName, lastName].filter(Boolean).join(' ').trim();
+          setAuthorDisplayName(displayName || 'Anonymous');
+        }
+      } catch (error) {
+        console.error('Error fetching author name:', error);
+      }
+    };
+    
+    fetchAuthorName();
+  }, [user?.id]);
 
   const categories = ['General', 'Tutorials', 'CTF Writeups', 'Tools', 'News', 'Research'];
 
@@ -197,7 +224,7 @@ const RichTextEditor = ({ blogId, onClose, onSave }: RichTextEditorProps) => {
         tags: blogData.tags,
         status: status,
         author_id: user.id,
-        author_name: user.email || 'Anonymous',
+        author_name: authorDisplayName,
         updated_at: new Date().toISOString()
       };
 

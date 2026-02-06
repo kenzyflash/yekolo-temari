@@ -65,6 +65,27 @@ const ChartContainer = React.forwardRef<
 })
 ChartContainer.displayName = "Chart"
 
+// CSS color validation regex - matches hex, rgb, rgba, hsl, hsla, and named colors
+const CSS_COLOR_PATTERN = /^(?:#[0-9a-fA-F]{3,8}|(?:rgb|hsl)a?\([^)]+\)|[a-zA-Z]+)$/
+
+const isValidCssColor = (color: string): boolean => {
+  if (!color || typeof color !== 'string') return false
+  const trimmed = color.trim()
+  // Also allow CSS variable references
+  if (trimmed.startsWith('var(') && trimmed.endsWith(')')) return true
+  return CSS_COLOR_PATTERN.test(trimmed)
+}
+
+const sanitizeColorValue = (color: string | undefined): string | null => {
+  if (!color) return null
+  const trimmed = color.trim()
+  if (!isValidCssColor(trimmed)) {
+    console.warn(`Invalid CSS color value rejected: ${trimmed}`)
+    return null
+  }
+  return trimmed
+}
+
 const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
   const colorConfig = Object.entries(config).filter(
     ([_, config]) => config.theme || config.color
@@ -83,11 +104,13 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
 ${prefix} [data-chart=${id}] {
 ${colorConfig
   .map(([key, itemConfig]) => {
-    const color =
+    const rawColor =
       itemConfig.theme?.[theme as keyof typeof itemConfig.theme] ||
       itemConfig.color
+    const color = sanitizeColorValue(rawColor)
     return color ? `  --color-${key}: ${color};` : null
   })
+  .filter(Boolean)
   .join("\n")}
 }
 `

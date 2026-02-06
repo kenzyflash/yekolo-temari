@@ -1,4 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from 'npm:@supabase/supabase-js@2';
 import { secureJsonResponse, corsPreflightResponse } from '../_shared/securityHeaders.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;

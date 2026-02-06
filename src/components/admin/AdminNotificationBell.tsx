@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRoles } from '@/hooks/useUserRoles';
 import { useAuth } from '@/hooks/useAuth';
-import { Bell, User, Mail, X, Check, CheckCheck, Shield, AlertTriangle, Lock } from 'lucide-react';
+import { Bell, User, Mail, X, Check, CheckCheck, Shield, AlertTriangle, Lock, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Popover,
@@ -26,17 +26,50 @@ interface Notification {
 
 const AdminNotificationBell = () => {
   const { user } = useAuth();
-  const { isAdmin, loading: rolesLoading } = useUserRoles();
+  const { roles, loading: rolesLoading } = useUserRoles();
   const { toast } = useToast();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const userIsAdmin = roles.includes('admin');
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
+  const fetchNotifications = useCallback(async (retryCount = 0) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const { data, error: fetchError } = await supabase
+        .from('admin_notifications')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (fetchError) {
+        if (retryCount < 2) {
+          setTimeout(() => fetchNotifications(retryCount + 1), 1000);
+          return;
+        }
+        throw fetchError;
+      }
+      setNotifications((data as Notification[]) || []);
+    } catch (err) {
+      console.error('Error fetching notifications:', err);
+      setError('Failed to load notifications');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (!user || rolesLoading) return;
-    if (!isAdmin()) return;
+    if (!userIsAdmin) {
+      setLoading(false);
+      return;
+    }
 
     fetchNotifications();
 
@@ -92,25 +125,7 @@ const AdminNotificationBell = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, rolesLoading, isAdmin, toast]);
-
-  const fetchNotifications = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('admin_notifications')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(50);
-
-      if (error) throw error;
-      setNotifications((data as Notification[]) || []);
-    } catch (error) {
-      console.error('Error fetching notifications:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [user, rolesLoading, userIsAdmin, toast, fetchNotifications]);
 
   const markAsRead = async (id: string) => {
     try {
@@ -172,7 +187,7 @@ const AdminNotificationBell = () => {
   };
 
   // Don't render if not admin
-  if (rolesLoading || !isAdmin()) {
+  if (rolesLoading || !userIsAdmin) {
     return null;
   }
 
@@ -214,7 +229,21 @@ const AdminNotificationBell = () => {
         </div>
         
         <ScrollArea className="h-[300px]">
-          {loading ? (
+          {error ? (
+            <div className="p-8 text-center">
+              <AlertTriangle className="h-8 w-8 text-brand-red/60 mx-auto mb-2" />
+              <p className="text-brand-red/80 text-sm mb-3">{error}</p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fetchNotifications()}
+                className="text-brand-green border-brand-green/30 hover:bg-brand-green/10"
+              >
+                <RefreshCw className="h-3 w-3 mr-1" />
+                Retry
+              </Button>
+            </div>
+          ) : loading ? (
             <div className="p-4 text-center text-brand-green/60">
               Loading...
             </div>

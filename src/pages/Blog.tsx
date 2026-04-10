@@ -253,6 +253,10 @@ const Blog = () => {
                         <Clock size={16} />
                         <span>{post.read_time}</span>
                       </div>
+                      <div className="flex items-center space-x-1">
+                        <MessageSquare size={16} />
+                        <span>{commentCounts.get(post.id) || 0}</span>
+                      </div>
                     </div>
 
                     <div className="flex flex-wrap gap-2 mb-6">

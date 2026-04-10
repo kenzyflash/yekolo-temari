@@ -122,7 +122,10 @@ export const projectSchema = z.object({
     .string()
     .trim()
     .url("Invalid GitHub URL")
-    .refine((url) => url.includes('github.com'), "Must be a GitHub URL"),
+    .refine((url) => {
+      const host = new URL(url).hostname.toLowerCase();
+      return host === 'github.com' || host.endsWith('.github.com');
+    }, "Must be a GitHub URL"),
   language: z
     .string()
     .trim()

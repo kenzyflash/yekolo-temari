@@ -222,6 +222,9 @@ const BlogPost = () => {
               </div>
             </div>
           </article>
+
+          {/* Comments section */}
+          <BlogComments blogId={post.id} />
         </div>
       </div>
 

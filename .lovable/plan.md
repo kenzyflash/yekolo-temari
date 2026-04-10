@@ -1,137 +1,58 @@
 
 
-## Plan: Fix Admin Notification System
+## Plan: Blog Comments System
 
-This plan addresses the notification system that's stuck on "Loading..." and the edge function build error.
+### What We're Building
+A threaded comment system on blog posts where authenticated users can post comments, edit/delete their own, and admins can moderate all comments.
 
-### Problem Summary
+### Database
 
-Based on my investigation, I found:
+**New table: `blog_comments`**
+- `id` (uuid, PK, default gen_random_uuid())
+- `blog_id` (uuid, NOT NULL, references blogs.id ON DELETE CASCADE)
+- `user_id` (uuid, NOT NULL)
+- `parent_id` (uuid, nullable, self-reference for replies)
+- `content` (text, NOT NULL)
+- `is_edited` (boolean, default false)
+- `created_at` (timestamptz, default now())
+- `updated_at` (timestamptz, default now())
 
-1. **3 unread notifications exist in the database** - The data is there
-2. **RLS policies are correctly configured** - Admins should be able to read notifications
-3. **Edge function build error** - The `check-account-lockout` function has an import error
-4. **Race condition in notification component** - The loading state may get stuck
+**RLS Policies:**
+- Anyone can SELECT comments (public blog feature)
+- Authenticated users can INSERT (with `auth.uid() = user_id`)
+- Users can UPDATE their own comments (`auth.uid() = user_id`)
+- Users can DELETE their own comments (`auth.uid() = user_id`)
+- Admins can do everything (`has_role(auth.uid(), 'admin')`)
 
-### Root Causes
+**Trigger:** `update_updated_at_column` on UPDATE
 
-1. **Edge Function Import Error**: The Supabase JS library import is using a version that returns a 500 error from esm.sh
-2. **Component Race Condition**: The `AdminNotificationBell` component has timing issues between:
-   - Checking if user is admin (`isAdmin()`)
-   - Loading state management
-   - The dependency array in useEffect including `isAdmin` function reference
+### New Component: `BlogComments.tsx`
 
-### Fixes to Apply
+A self-contained component added to the bottom of `BlogPost.tsx` that handles:
 
-#### Fix 1: Edge Function Import (fixes build error)
+1. **Comment list** - Fetches and displays all comments for a blog post, showing commenter name (from profiles), timestamp, and content. Replies are nested with indent.
+2. **Add comment form** - Textarea + submit button, visible only to authenticated users. Unauthenticated users see a "Login to comment" prompt.
+3. **Reply** - Each comment has a "Reply" button that opens an inline reply form.
+4. **Edit/Delete** - Users see edit/delete controls on their own comments. Admins see delete on all comments.
+5. **Real-time count** - Comment count displayed in the section header.
 
-Update all edge functions to use a stable import pattern without a specific version number that might cause 500 errors.
+### UI Design
+- Terminal-themed styling consistent with the rest of the app (brand-dark, brand-green, brand-red colors)
+- Comments displayed in a card-like format with `bg-brand-darker` background and `border-brand-green/20` borders
+- Nested replies indented with a left border accent
 
-**Files to update:**
-- `supabase/functions/check-account-lockout/index.ts`
-- Other edge functions using the same import pattern
+### Changes Summary
 
-Change:
-```typescript
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-```
+| File | Change |
+|------|--------|
+| Migration SQL | Create `blog_comments` table with RLS |
+| `src/components/BlogComments.tsx` | New component (comment list, form, edit, delete, reply) |
+| `src/pages/BlogPost.tsx` | Import and render `BlogComments` below blog content |
+| `src/integrations/supabase/types.ts` | Auto-updated after migration |
 
-This pattern should work, but the esm.sh CDN sometimes has issues with specific versions. We'll ensure all imports are consistent.
-
-#### Fix 2: Notification Component Race Condition
-
-Update `AdminNotificationBell.tsx` to:
-
-1. **Add proper error handling** - Show error state instead of infinite loading
-2. **Fix dependency array** - Remove `isAdmin` function from deps (causes re-renders)
-3. **Add timeout handling** - Prevent infinite loading state
-4. **Improve state management** - Ensure loading is set to false in all code paths
-
-**Changes:**
-```typescript
-// Add error state
-const [error, setError] = useState<string | null>(null);
-
-// Fix useEffect to not depend on isAdmin function reference
-useEffect(() => {
-  if (!user || rolesLoading) return;
-  
-  // Check admin status using roles array directly
-  const userIsAdmin = roles.includes('admin');
-  if (!userIsAdmin) return;
-
-  fetchNotifications();
-  // ... setup realtime
-}, [user, rolesLoading, roles]); // Use roles array instead of isAdmin function
-
-// Add error display in UI
-{error ? (
-  <div className="p-4 text-center text-red-400">
-    {error}
-  </div>
-) : loading ? (
-  // ... loading UI
-)}
-```
-
-#### Fix 3: Add Retry Logic
-
-Add a retry mechanism for failed notification fetches:
-
-```typescript
-const fetchNotifications = async (retryCount = 0) => {
-  try {
-    setLoading(true);
-    setError(null);
-    const { data, error } = await supabase
-      .from('admin_notifications')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(50);
-
-    if (error) {
-      if (retryCount < 2) {
-        setTimeout(() => fetchNotifications(retryCount + 1), 1000);
-        return;
-      }
-      throw error;
-    }
-    setNotifications(data || []);
-  } catch (err) {
-    console.error('Error fetching notifications:', err);
-    setError('Failed to load notifications');
-  } finally {
-    setLoading(false);
-  }
-};
-```
-
-### Implementation Steps
-
-| Step | Task | File |
-|------|------|------|
-| 1 | Fix edge function import | `supabase/functions/check-account-lockout/index.ts` |
-| 2 | Add error state to notification component | `src/components/admin/AdminNotificationBell.tsx` |
-| 3 | Fix useEffect dependency array | `src/components/admin/AdminNotificationBell.tsx` |
-| 4 | Add retry logic for fetch | `src/components/admin/AdminNotificationBell.tsx` |
-| 5 | Update UI to show error state | `src/components/admin/AdminNotificationBell.tsx` |
-| 6 | Deploy and test | - |
-
-### User Action Required
-
-**Critical:** The system detected that your `package-lock.json` file is corrupted/invalid JSON. You need to fix this manually:
-
-1. Delete `package-lock.json` from your project
-2. Run `npm install` to regenerate it
-
-This is required for the project to build correctly.
-
-### Testing
-
-After implementation:
-1. Login as an admin user
-2. Click the notification bell in the navigation
-3. Verify notifications load (should show 3 unread)
-4. Test mark as read and delete functions
-5. Verify real-time updates work for new notifications
+### Security
+- Input validation: max 2000 chars, trimmed, non-empty
+- XSS prevention: content rendered as plain text (no HTML/markdown)
+- RLS ensures users can only modify their own comments
+- Admin override via `has_role()` security definer function
 

@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Calendar, Clock, User, Search, Plus, Edit2 } from 'lucide-react';
+import { Calendar, Clock, User, Search, Plus, Edit2, MessageSquare } from 'lucide-react';
 import Navigation from '@/components/Navigation';
 import MatrixRain from '@/components/MatrixRain';
 import Footer from '@/components/Footer';
@@ -31,6 +31,7 @@ const Blog = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [commentCounts, setCommentCounts] = useState<Map<string, number>>(new Map());
   const [filteredPosts, setFilteredPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -60,6 +61,21 @@ const Blog = () => {
 
       if (error) throw error;
       setPosts(data || []);
+
+      // Fetch comment counts for all posts
+      if (data && data.length > 0) {
+        const postIds = data.map(p => p.id);
+        const { data: commentsData } = await supabase
+          .from('blog_comments')
+          .select('blog_id')
+          .in('blog_id', postIds);
+
+        const counts = new Map<string, number>();
+        commentsData?.forEach(c => {
+          counts.set(c.blog_id, (counts.get(c.blog_id) || 0) + 1);
+        });
+        setCommentCounts(counts);
+      }
     } catch (error: any) {
       toast({
         title: "Error",
@@ -236,6 +252,10 @@ const Blog = () => {
                       <div className="flex items-center space-x-1">
                         <Clock size={16} />
                         <span>{post.read_time}</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <MessageSquare size={16} />
+                        <span>{commentCounts.get(post.id) || 0}</span>
                       </div>
                     </div>
 

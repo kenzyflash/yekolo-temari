@@ -11,6 +11,7 @@ import BlogEditor from '@/components/BlogEditor';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import ReactMarkdown from 'react-markdown';
+import BlogComments from '@/components/BlogComments';
 
 
 interface BlogPost {
@@ -221,6 +222,9 @@ const BlogPost = () => {
               </div>
             </div>
           </article>
+
+          {/* Comments section */}
+          <BlogComments blogId={post.id} />
         </div>
       </div>
 

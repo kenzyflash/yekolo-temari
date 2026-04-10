@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Calendar, Clock, User, Search, Plus, Edit2 } from 'lucide-react';
+import { Calendar, Clock, User, Search, Plus, Edit2, MessageSquare } from 'lucide-react';
 import Navigation from '@/components/Navigation';
 import MatrixRain from '@/components/MatrixRain';
 import Footer from '@/components/Footer';

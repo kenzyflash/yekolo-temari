@@ -61,6 +61,21 @@ const Blog = () => {
 
       if (error) throw error;
       setPosts(data || []);
+
+      // Fetch comment counts for all posts
+      if (data && data.length > 0) {
+        const postIds = data.map(p => p.id);
+        const { data: commentsData } = await supabase
+          .from('blog_comments')
+          .select('blog_id')
+          .in('blog_id', postIds);
+
+        const counts = new Map<string, number>();
+        commentsData?.forEach(c => {
+          counts.set(c.blog_id, (counts.get(c.blog_id) || 0) + 1);
+        });
+        setCommentCounts(counts);
+      }
     } catch (error: any) {
       toast({
         title: "Error",

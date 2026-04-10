@@ -17,9 +17,9 @@ export const useIdleTimeout = (
 ): UseIdleTimeoutReturn => {
   const [showWarning, setShowWarning] = useState(false);
   const [remainingTime, setRemainingTime] = useState(TIMEOUT_DURATION);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const warningRef = useRef<NodeJS.Timeout | null>(null);
-  const countdownRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const warningRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const updateLastActivity = useCallback(() => {
     const now = Date.now();
@@ -149,7 +149,7 @@ export const useIdleTimeout = (
     if (!isAuthenticated) return;
 
     const events = ['mousedown', 'keydown', 'scroll', 'touchstart', 'mousemove'];
-    let throttleTimer: NodeJS.Timeout | null = null;
+    let throttleTimer: ReturnType<typeof setTimeout> | null = null;
 
     const handleActivity = () => {
       // Throttle activity updates to prevent excessive localStorage writes

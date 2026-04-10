@@ -31,6 +31,7 @@ const Blog = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [commentCounts, setCommentCounts] = useState<Map<string, number>>(new Map());
   const [filteredPosts, setFilteredPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');

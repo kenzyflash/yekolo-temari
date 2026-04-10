@@ -16,7 +16,8 @@ import SecuritySettings from '@/components/admin/SecuritySettings';
 import BulkUserManagement from '@/components/admin/BulkUserManagement';
 import RateLimitingDashboard from '@/components/admin/RateLimitingDashboard';
 import ContentVersioning from '@/components/admin/ContentVersioning';
-import { Settings, BookOpen, Calendar, FolderOpen, Users, Shield, Mail, Send, BarChart3, FileText, Lock, Activity, History } from 'lucide-react';
+import CommentModeration from '@/components/admin/CommentModeration';
+import { Settings, BookOpen, Calendar, FolderOpen, Users, Shield, Mail, Send, BarChart3, FileText, Lock, Activity, History, MessageSquare } from 'lucide-react';
 import AdminAnalytics from '@/components/admin/AdminAnalytics';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -34,7 +35,8 @@ const Admin = () => {
     projects: 0,
     users: 0,
     messages: 0,
-    emails: 0
+    emails: 0,
+    comments: 0
   });
 
   useEffect(() => {
@@ -52,13 +54,14 @@ const Admin = () => {
 
   const fetchStats = async () => {
     try {
-      const [blogsRes, eventsRes, projectsRes, usersRes, messagesRes, emailsRes] = await Promise.all([
+      const [blogsRes, eventsRes, projectsRes, usersRes, messagesRes, emailsRes, commentsRes] = await Promise.all([
         supabase.from('blogs').select('id', { count: 'exact', head: true }),
         supabase.from('events').select('id', { count: 'exact', head: true }),
         supabase.from('projects').select('id', { count: 'exact', head: true }),
         supabase.from('user_roles').select('id', { count: 'exact', head: true }),
         supabase.from('contact_messages').select('id', { count: 'exact', head: true }),
-        supabase.from('email_logs').select('id', { count: 'exact', head: true })
+        supabase.from('email_logs').select('id', { count: 'exact', head: true }),
+        supabase.from('blog_comments').select('id', { count: 'exact', head: true })
       ]);
 
       setStats({
@@ -67,7 +70,8 @@ const Admin = () => {
         projects: projectsRes.count || 0,
         users: usersRes.count || 0,
         messages: messagesRes.count || 0,
-        emails: emailsRes.count || 0
+        emails: emailsRes.count || 0,
+        comments: commentsRes.count || 0
       });
     } catch (error: any) {
       console.error('Error fetching stats:', error);
@@ -142,6 +146,7 @@ const Admin = () => {
     { id: 'email', name: 'Email', icon: Send, count: stats.emails },
     { id: 'audit', name: 'Audit Logs', icon: FileText, count: null },
     { id: 'security', name: 'Security', icon: Lock, count: null },
+    { id: 'comments', name: 'Comments', icon: MessageSquare, count: stats.comments },
     { id: 'rate-limits', name: 'Rate Limits', icon: Activity, count: null },
     { id: 'versioning', name: 'Versioning', icon: History, count: null }
   ];
@@ -250,6 +255,7 @@ const Admin = () => {
               {activeTab === 'audit' && <AuditLogViewer />}
               {activeTab === 'security' && <SecuritySettings />}
               {activeTab === 'rate-limits' && <RateLimitingDashboard />}
+              {activeTab === 'comments' && <CommentModeration />}
               {activeTab === 'versioning' && <ContentVersioning />}
             </div>
           </div>

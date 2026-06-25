@@ -17,6 +17,7 @@ interface AttemptRecord {
 }
 
 const STORAGE_PREFIX = 'rl_';
+const memoryStore = new Map<string, AttemptRecord>();
 
 export class RateLimiter {
   private key: string;
@@ -28,29 +29,15 @@ export class RateLimiter {
   }
 
   private getRecord(): AttemptRecord | null {
-    try {
-      const stored = localStorage.getItem(this.key);
-      if (!stored) return null;
-      return JSON.parse(stored);
-    } catch {
-      return null;
-    }
+    return memoryStore.get(this.key) ?? null;
   }
 
   private setRecord(record: AttemptRecord): void {
-    try {
-      localStorage.setItem(this.key, JSON.stringify(record));
-    } catch {
-      // Storage full or disabled, fail silently
-    }
+    memoryStore.set(this.key, record);
   }
 
   private clearRecord(): void {
-    try {
-      localStorage.removeItem(this.key);
-    } catch {
-      // Fail silently
-    }
+    memoryStore.delete(this.key);
   }
 
   /**
